@@ -1,0 +1,741 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Bug.io</title>
+  <style>
+    * {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
+    }
+
+    html, body {
+      width: 100%;
+      height: 100%;
+      overflow: hidden;
+      background: #0d1117;
+      font-family: 'Segoe UI', system-ui, sans-serif;
+      color: #e6edf3;
+    }
+
+    canvas#game {
+      display: block;
+      width: 100%;
+      height: 100%;
+    }
+
+    /* --- Overlays base --- */
+    .overlay {
+      display: none;
+      position: fixed;
+      inset: 0;
+      background: rgba(0, 0, 0, 0.75);
+      justify-content: center;
+      align-items: center;
+      z-index: 10;
+      flex-direction: column;
+      gap: 24px;
+      opacity: 0;
+      transition: opacity 0.3s ease;
+    }
+
+    .overlay.visible {
+      display: flex;
+      opacity: 1;
+    }
+
+    /* --- Pause --- */
+    #pause-overlay h1 {
+      font-size: 48px;
+      letter-spacing: 4px;
+    }
+
+    #pause-overlay p {
+      font-size: 18px;
+      opacity: 0.6;
+    }
+
+    /* --- Level Up --- */
+    #levelup-overlay {
+      gap: 20px;
+    }
+
+    #levelup-level {
+      font-size: 28px;
+      font-weight: bold;
+      color: #7ee787;
+      letter-spacing: 2px;
+    }
+
+    #levelup-cards {
+      display: flex;
+      gap: 16px;
+    }
+
+    .levelup-card {
+      background: #161b22;
+      border: 2px solid #30363d;
+      border-radius: 12px;
+      padding: 20px 24px;
+      width: 180px;
+      text-align: center;
+      cursor: pointer;
+      transition: transform 0.15s, border-color 0.15s;
+      position: relative;
+    }
+
+    .levelup-card:hover {
+      transform: translateY(-4px) scale(1.03);
+      border-color: #58a6ff;
+    }
+
+    .levelup-emoji {
+      font-size: 36px;
+      margin-bottom: 8px;
+    }
+
+    .levelup-name {
+      font-size: 15px;
+      font-weight: bold;
+      margin-bottom: 6px;
+      color: #e6edf3;
+    }
+
+    .levelup-desc {
+      font-size: 12px;
+      color: #8b949e;
+      margin-bottom: 8px;
+    }
+
+    .levelup-lvl {
+      font-size: 11px;
+      color: #7ee787;
+    }
+
+    .levelup-key {
+      position: absolute;
+      top: 8px;
+      right: 10px;
+      font-size: 11px;
+      color: #484f58;
+      background: #21262d;
+      border-radius: 4px;
+      padding: 1px 6px;
+      font-family: monospace;
+    }
+
+    /* --- Hero Selection --- */
+    .hero-card {
+      background: #161b22;
+      border: 2px solid #30363d;
+      border-radius: 12px;
+      padding: 20px 18px;
+      width: 170px;
+      text-align: center;
+      cursor: pointer;
+      transition: transform 0.15s, border-color 0.15s;
+    }
+
+    .hero-card:hover:not(.hero-locked) {
+      transform: translateY(-4px) scale(1.03);
+      border-color: #58a6ff;
+    }
+
+    .hero-card.hero-locked {
+      opacity: 0.4;
+      cursor: not-allowed;
+    }
+
+    .hero-card-emoji {
+      font-size: 40px;
+      margin-bottom: 8px;
+    }
+
+    .hero-card-name {
+      font-size: 16px;
+      font-weight: bold;
+      margin-bottom: 4px;
+    }
+
+    .hero-card-desc {
+      font-size: 11px;
+      color: #8b949e;
+      margin-bottom: 8px;
+    }
+
+    .hero-card-passive {
+      font-size: 10px;
+      color: #7ee787;
+    }
+
+    .hero-card-lock {
+      font-size: 12px;
+      color: #f85149;
+    }
+
+    /* --- Staging PR cards --- */
+    .staging-card {
+      width: 210px;
+      text-align: left;
+    }
+
+    .staging-file-header {
+      font-size: 12px;
+      font-family: monospace;
+      color: #58a6ff;
+      background: #161b22;
+      border: 1px solid #30363d;
+      border-radius: 4px;
+      padding: 3px 8px;
+      margin-bottom: 8px;
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+    }
+
+    .staging-diff {
+      font-size: 11px;
+      font-family: monospace;
+      line-height: 1.5;
+      background: #0d1117;
+      border: 1px solid #21262d;
+      border-radius: 4px;
+      padding: 6px 8px;
+      margin: 0 0 10px;
+      overflow: hidden;
+      white-space: pre-wrap;
+    }
+
+    .diff-add { color: #3fb950; }
+    .diff-del { color: #f85149; }
+    .diff-ctx { color: #8b949e; }
+
+    .staging-merge-btn {
+      display: block;
+      width: 100%;
+      background: #238636;
+      border: 1px solid #2ea043;
+      color: #e6edf3;
+      font-size: 12px;
+      padding: 6px 0;
+      border-radius: 6px;
+      cursor: pointer;
+      font-family: inherit;
+      transition: background 0.15s;
+    }
+
+    .staging-merge-btn:hover {
+      background: #2ea043;
+    }
+
+    .staging-reject-btn {
+      background: #21262d;
+      border: 1px solid #f85149;
+      color: #f85149;
+      font-size: 13px;
+      padding: 6px 20px;
+      border-radius: 6px;
+      cursor: pointer;
+      font-family: inherit;
+      transition: background 0.15s, opacity 0.15s;
+    }
+
+    .staging-reject-btn:hover:not(:disabled) {
+      background: #f8514922;
+    }
+
+    .staging-reject-btn:disabled {
+      opacity: 0.3;
+      cursor: not-allowed;
+    }
+
+    /* --- Legacy Codebase debt toggle --- */
+    .legacy-toggle {
+      display: flex;
+      gap: 4px;
+      margin: 6px 0 4px;
+    }
+
+    .legacy-btn {
+      flex: 1;
+      background: #21262d;
+      border: 1px solid #30363d;
+      color: #8b949e;
+      font-size: 10px;
+      padding: 3px 4px;
+      border-radius: 4px;
+      cursor: pointer;
+      font-family: inherit;
+      transition: background 0.15s, color 0.15s;
+    }
+
+    .legacy-btn.active {
+      background: #30363d;
+      color: #e6edf3;
+      border-color: #58a6ff;
+    }
+
+    .legacy-debt-info {
+      font-size: 10px;
+      color: #e3b341;
+      text-align: center;
+    }
+
+    .levelup-card-evo {
+      border-color: #e3b341;
+      background: linear-gradient(135deg, #1c1e24, #2a2017);
+    }
+
+    .levelup-card-evo:hover {
+      border-color: #f0c040;
+    }
+
+    .levelup-card-evo .levelup-lvl {
+      color: #e3b341;
+      font-weight: bold;
+    }
+
+    /* --- End Screen (Death / Victory) --- */
+    #end-overlay {
+      gap: 24px;
+    }
+
+    #end-title {
+      font-size: 42px;
+      font-weight: bold;
+      letter-spacing: 3px;
+    }
+
+    #end-stats {
+      display: flex;
+      flex-direction: column;
+      gap: 10px;
+      min-width: 260px;
+    }
+
+    .end-stat {
+      display: flex;
+      justify-content: space-between;
+      font-size: 16px;
+      padding: 6px 0;
+      border-bottom: 1px solid #21262d;
+    }
+
+    .end-stat span:last-child {
+      font-weight: bold;
+      color: #58a6ff;
+    }
+
+    #end-buttons {
+      display: flex;
+      gap: 16px;
+      margin-top: 8px;
+    }
+
+    .end-btn {
+      background: #21262d;
+      border: 1px solid #30363d;
+      color: #e6edf3;
+      font-size: 16px;
+      padding: 10px 28px;
+      border-radius: 8px;
+      cursor: pointer;
+      transition: background 0.15s, transform 0.1s;
+      font-family: inherit;
+    }
+
+    .end-btn:hover {
+      background: #30363d;
+      transform: translateY(-2px);
+    }
+
+    .end-btn.primary {
+      background: #238636;
+      border-color: #2ea043;
+    }
+
+    .end-btn.primary:hover {
+      background: #2ea043;
+    }
+
+    /* --- Meta Menu --- */
+    #meta-overlay {
+      gap: 16px;
+      padding: 32px;
+      align-items: center;
+    }
+
+    #meta-header {
+      display: flex;
+      align-items: center;
+      gap: 24px;
+      margin-bottom: 8px;
+    }
+
+    .meta-balance {
+      font-size: 24px;
+      font-weight: bold;
+      color: #7ee787;
+      font-family: monospace;
+      transition: color 0.3s;
+    }
+
+    .meta-section-title {
+      font-size: 18px;
+      color: #8b949e;
+      margin: 16px 0 8px;
+      text-align: left;
+      width: 100%;
+      letter-spacing: 1px;
+    }
+
+    #meta-content {
+      max-width: 700px;
+      width: 100%;
+    }
+
+    .meta-cards {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 12px;
+      margin-bottom: 8px;
+    }
+
+    .meta-card {
+      background: #161b22;
+      border: 2px solid #30363d;
+      border-radius: 10px;
+      padding: 14px 16px;
+      width: 160px;
+      text-align: center;
+      transition: transform 0.15s, box-shadow 0.3s;
+    }
+
+    .meta-card.unlocked {
+      border-color: #238636;
+    }
+
+    .meta-card.locked {
+      opacity: 0.7;
+    }
+
+    .meta-card:hover {
+      transform: translateY(-2px);
+    }
+
+    .meta-card-emoji {
+      font-size: 28px;
+      margin-bottom: 6px;
+    }
+
+    .meta-card-name {
+      font-size: 13px;
+      font-weight: bold;
+      color: #e6edf3;
+      margin-bottom: 4px;
+    }
+
+    .meta-card-desc {
+      font-size: 11px;
+      color: #8b949e;
+      margin-bottom: 8px;
+      min-height: 28px;
+    }
+
+    .meta-card-status {
+      font-size: 11px;
+      color: #3fb950;
+      font-weight: bold;
+    }
+
+    .meta-unlock-btn {
+      background: #238636;
+      border: 1px solid #2ea043;
+      color: #e6edf3;
+      font-size: 12px;
+      padding: 5px 12px;
+      border-radius: 6px;
+      cursor: pointer;
+      font-family: inherit;
+      transition: background 0.15s;
+    }
+
+    .meta-unlock-btn:hover {
+      background: #2ea043;
+    }
+
+    /* --- Meta Tabs --- */
+    .meta-tabs {
+      display: flex;
+      gap: 8px;
+      margin-bottom: 12px;
+    }
+
+    .meta-tab {
+      background: #21262d;
+      border: 1px solid #30363d;
+      color: #8b949e;
+      font-size: 14px;
+      padding: 6px 20px;
+      border-radius: 6px;
+      cursor: pointer;
+      font-family: inherit;
+      transition: background 0.15s, color 0.15s;
+    }
+
+    .meta-tab:hover {
+      color: #e6edf3;
+    }
+
+    .meta-tab.active {
+      background: #30363d;
+      color: #e6edf3;
+      border-color: #58a6ff;
+    }
+
+    /* --- Quest List --- */
+    .quest-list {
+      display: flex;
+      flex-direction: column;
+      gap: 8px;
+    }
+
+    .quest-item {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      background: #161b22;
+      border: 1px solid #30363d;
+      border-radius: 8px;
+      padding: 10px 14px;
+    }
+
+    .quest-item.quest-done {
+      opacity: 0.6;
+      border-color: #238636;
+    }
+
+    .quest-info {
+      flex: 1;
+      min-width: 0;
+    }
+
+    .quest-item-title {
+      font-size: 13px;
+      font-weight: bold;
+      color: #e6edf3;
+    }
+
+    .quest-item-desc {
+      font-size: 11px;
+      color: #8b949e;
+    }
+
+    .quest-progress-wrap {
+      width: 100px;
+      text-align: center;
+    }
+
+    .quest-progress-bar {
+      width: 100%;
+      height: 6px;
+      background: #21262d;
+      border-radius: 3px;
+      overflow: hidden;
+      margin-bottom: 2px;
+    }
+
+    .quest-progress-fill {
+      height: 100%;
+      background: #58a6ff;
+      border-radius: 3px;
+      transition: width 0.3s;
+    }
+
+    .quest-progress-text {
+      font-size: 10px;
+      color: #8b949e;
+      font-family: monospace;
+    }
+
+    .quest-reward-text {
+      font-size: 12px;
+      color: #7ee787;
+      font-weight: bold;
+      white-space: nowrap;
+    }
+
+    /* --- Toast Notifications --- */
+    #toast-container {
+      position: fixed;
+      top: 16px;
+      left: 50%;
+      transform: translateX(-50%);
+      z-index: 100;
+      display: flex;
+      flex-direction: column;
+      gap: 8px;
+      pointer-events: none;
+    }
+
+    .quest-toast {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      background: #1c2128;
+      border: 1px solid #238636;
+      border-radius: 8px;
+      padding: 10px 16px;
+      opacity: 0;
+      transform: translateY(-20px);
+      transition: opacity 0.3s, transform 0.3s;
+      pointer-events: auto;
+    }
+
+    .quest-toast.visible {
+      opacity: 1;
+      transform: translateY(0);
+    }
+
+    .quest-toast-icon {
+      font-size: 20px;
+      color: #3fb950;
+    }
+
+    .quest-toast-body {
+      display: flex;
+      flex-direction: column;
+    }
+
+    .quest-toast-title {
+      font-size: 11px;
+      color: #3fb950;
+      font-weight: bold;
+    }
+
+    .quest-toast-name {
+      font-size: 14px;
+      color: #e6edf3;
+      font-weight: bold;
+    }
+
+    .quest-toast-reward {
+      font-size: 11px;
+      color: #7ee787;
+    }
+
+    /* --- FPS counter --- */
+    #fps-counter {
+      position: fixed;
+      top: 8px;
+      right: 8px;
+      font-size: 12px;
+      color: #7ee787;
+      font-family: monospace;
+      z-index: 5;
+    }
+
+    /* --- Boss HP Bar --- */
+    #boss-hp-bar {
+      display: none;
+      position: fixed;
+      bottom: 40px;
+      left: 50%;
+      transform: translateX(-50%);
+      width: 400px;
+      max-width: 80vw;
+      z-index: 5;
+    }
+
+    #boss-hp-bar.visible {
+      display: block;
+    }
+
+    #boss-hp-text {
+      font-size: 13px;
+      font-family: monospace;
+      color: #e6edf3;
+      text-align: center;
+      margin-bottom: 4px;
+    }
+
+    #boss-hp-track {
+      width: 100%;
+      height: 10px;
+      background: #21262d;
+      border: 1px solid #30363d;
+      border-radius: 5px;
+      overflow: hidden;
+    }
+
+    #boss-hp-fill {
+      height: 100%;
+      width: 100%;
+      background: #0078d4;
+      transition: width 0.2s ease;
+      border-radius: 5px;
+    }
+  </style>
+</head>
+<body>
+  <canvas id="game"></canvas>
+
+  <div id="hero-select-overlay" class="overlay" style="gap:20px;">
+    <div style="font-size:28px;font-weight:bold;letter-spacing:2px;">Choose Your Hero</div>
+    <div id="hero-cards" style="display:flex;gap:16px;"></div>
+  </div>
+
+  <div id="pause-overlay" class="overlay">
+    <h1>PAUSED</h1>
+    <p>Press Escape to resume</p>
+  </div>
+
+  <div id="levelup-overlay" class="overlay">
+    <div id="levelup-level">Level 2</div>
+    <div id="levelup-cards"></div>
+    <p style="font-size: 13px; opacity: 0.4;">Press 1, 2, or 3 to choose</p>
+  </div>
+
+  <div id="end-overlay" class="overlay">
+    <div id="end-title">GAME OVER</div>
+    <div id="end-stats"></div>
+    <div id="end-buttons">
+      <button class="end-btn primary" onclick="restartGame()">Quick Restart</button>
+      <button class="end-btn" onclick="document.getElementById('end-overlay').classList.remove('visible');showHeroSelect()">New Hero</button>
+      <button class="end-btn" onclick="document.getElementById('end-overlay').classList.remove('visible');showMetaMenu()">Meta Menu</button>
+    </div>
+  </div>
+
+  <div id="meta-overlay" class="overlay" style="overflow-y:auto;">
+    <div id="meta-header">
+      <div id="meta-commits" class="meta-balance">0 Commits</div>
+      <button class="end-btn" onclick="hideMetaMenu()">Close</button>
+    </div>
+    <div id="meta-content"></div>
+  </div>
+
+  <div id="toast-container"></div>
+  <div id="fps-counter"></div>
+
+  <div id="boss-hp-bar">
+    <div id="boss-hp-text">Windows XP — 2000/2000</div>
+    <div id="boss-hp-track">
+      <div id="boss-hp-fill"></div>
+    </div>
+  </div>
+
+  <script src="js/config.js"></script>
+  <script src="js/progress.js"></script>
+  <script src="js/quests.js"></script>
+  <script src="js/enemies.js"></script>
+  <script src="js/projectiles.js"></script>
+  <script src="js/collision.js"></script>
+  <script src="js/skills.js"></script>
+  <script src="js/xp.js"></script>
+  <script src="js/hud.js"></script>
+  <script src="js/locations.js"></script>
+  <script src="js/game.js"></script>
+</body>
+</html>
