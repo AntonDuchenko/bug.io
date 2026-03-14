@@ -311,12 +311,11 @@ function restartGame() {
   renderHUD._displayHp = CONFIG.PLAYER_MAX_HP;
 
   // Hide overlays
-  document.getElementById('end-overlay').classList.remove('visible');
-  document.getElementById('levelup-overlay').classList.remove('visible');
-  document.getElementById('pause-overlay').classList.remove('visible');
-  document.getElementById('incident-overlay').classList.remove('visible');
-  const heroOverlay = document.getElementById('hero-select-overlay');
-  if (heroOverlay) heroOverlay.classList.remove('visible');
-  const metaOverlay = document.getElementById('meta-overlay');
-  if (metaOverlay) metaOverlay.classList.remove('visible');
+  const overlayIds = ['end-overlay', 'levelup-overlay', 'pause-overlay', 'incident-overlay',
+                      'hero-select-overlay', 'meta-overlay', 'main-menu-overlay',
+                      'location-select-overlay', 'settings-overlay', 'puzzle-overlay'];
+  for (const id of overlayIds) {
+    const el = document.getElementById(id);
+    if (el) el.classList.remove('visible');
+  }
 }

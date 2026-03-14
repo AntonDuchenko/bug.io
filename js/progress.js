@@ -158,6 +158,9 @@ let metaMenuOpen = false;
 function showMetaMenu() {
   metaMenuOpen = true;
   if (!saveData) loadProgress();
+  // Hide main menu if visible
+  const mainMenu = document.getElementById('main-menu-overlay');
+  if (mainMenu) mainMenu.classList.remove('visible');
   const overlay = document.getElementById('meta-overlay');
   renderMetaContent();
   overlay.classList.add('visible');
@@ -166,6 +169,10 @@ function showMetaMenu() {
 function hideMetaMenu() {
   metaMenuOpen = false;
   document.getElementById('meta-overlay').classList.remove('visible');
+  // Return to main menu if game is not in progress
+  if (game.state === GameState.MENU) {
+    showMainMenu();
+  }
 }
 
 let metaTab = 'shop'; // 'shop' or 'quests'
@@ -267,9 +274,63 @@ function tryUnlock(type, id, cost) {
 // --- Track bosses killed this run ---
 let bossesKilledThisRun = 0;
 
-// --- Hero Selection ---
+// --- Menu Navigation ---
 let selectedHeroId = 'frontend_dev';
+let selectedLocationId = 'localhost';
 
+// Loading screen → Main Menu
+function initMenuFlow() {
+  if (!saveData) loadProgress();
+
+  const loadingScreen = document.getElementById('loading-screen');
+  // Typewriter plays for ~1.5s, then fade out
+  setTimeout(() => {
+    loadingScreen.classList.add('fade-out');
+    setTimeout(() => {
+      loadingScreen.style.display = 'none';
+      showMainMenu();
+    }, 600);
+  }, 2000);
+}
+
+function showMainMenu() {
+  if (!saveData) loadProgress();
+  hideAllMenuOverlays();
+
+  const overlay = document.getElementById('main-menu-overlay');
+  const statsEl = document.getElementById('menu-stats');
+
+  // Show stats
+  statsEl.innerHTML = `
+    Commits: <span>${saveData.commits}</span> |
+    Games: <span>${saveData.gamesPlayed}</span> |
+    Victories: <span>${saveData.victories || 0}</span> |
+    Best: <span>${saveData.maxSurviveMinutes || 0}</span> min
+  `;
+
+  overlay.classList.add('visible');
+}
+
+function menuPlay() {
+  document.getElementById('main-menu-overlay').classList.remove('visible');
+  showHeroSelect();
+}
+
+function backToMainMenu() {
+  hideAllMenuOverlays();
+  showMainMenu();
+}
+
+function hideAllMenuOverlays() {
+  const ids = ['main-menu-overlay', 'hero-select-overlay', 'location-select-overlay',
+               'settings-overlay', 'meta-overlay', 'end-overlay'];
+  for (const id of ids) {
+    const el = document.getElementById(id);
+    if (el) el.classList.remove('visible');
+  }
+}
+
+// --- Hero Selection ---
 function showHeroSelect() {
   if (!saveData) loadProgress();
   const overlay = document.getElementById('hero-select-overlay');
@@ -300,7 +361,7 @@ function showHeroSelect() {
       card.addEventListener('click', () => {
         selectedHeroId = heroId;
         overlay.classList.remove('visible');
-        startGameWithHero(heroId);
+        showLocationSelect();
       });
     }
 
@@ -310,9 +371,121 @@ function showHeroSelect() {
   overlay.classList.add('visible');
 }
 
+function backToHeroSelect() {
+  document.getElementById('location-select-overlay').classList.remove('visible');
+  showHeroSelect();
+}
+
+// --- Location Selection ---
+function showLocationSelect() {
+  if (!saveData) loadProgress();
+  const overlay = document.getElementById('location-select-overlay');
+  const container = document.getElementById('location-cards');
+  container.innerHTML = '';
+
+  // Default to first unlocked location
+  if (!isUnlocked('location', selectedLocationId)) {
+    selectedLocationId = 'localhost';
+  }
+
+  for (const loc of LOCATIONS) {
+    const unlocked = isUnlocked('location', loc.id);
+    const selected = loc.id === selectedLocationId;
+    const card = document.createElement('div');
+    card.className = 'location-card'
+      + (unlocked ? '' : ' location-locked')
+      + (selected ? ' location-selected' : '');
+
+    card.innerHTML = `
+      <div class="location-card-emoji">${loc.emoji}</div>
+      <div class="location-card-name">${loc.name}</div>
+      <div class="location-card-desc">${loc.desc}</div>
+      ${unlocked ? '' : '<div class="location-card-lock">Locked</div>'}
+    `;
+
+    if (unlocked) {
+      card.addEventListener('click', () => {
+        selectedLocationId = loc.id;
+        renderLocationCards(); // re-render to update selection
+      });
+    }
+
+    container.appendChild(card);
+  }
+
+  overlay.classList.add('visible');
+}
+
+function renderLocationCards() {
+  const container = document.getElementById('location-cards');
+  container.innerHTML = '';
+
+  for (const loc of LOCATIONS) {
+    const unlocked = isUnlocked('location', loc.id);
+    const selected = loc.id === selectedLocationId;
+    const card = document.createElement('div');
+    card.className = 'location-card'
+      + (unlocked ? '' : ' location-locked')
+      + (selected ? ' location-selected' : '');
+
+    card.innerHTML = `
+      <div class="location-card-emoji">${loc.emoji}</div>
+      <div class="location-card-name">${loc.name}</div>
+      <div class="location-card-desc">${loc.desc}</div>
+      ${unlocked ? '' : '<div class="location-card-lock">Locked</div>'}
+    `;
+
+    if (unlocked) {
+      card.addEventListener('click', () => {
+        selectedLocationId = loc.id;
+        renderLocationCards();
+      });
+    }
+
+    container.appendChild(card);
+  }
+}
+
+function startWithSelectedLocation() {
+  document.getElementById('location-select-overlay').classList.remove('visible');
+  activeLocation = selectedLocationId;
+  startGameWithHero(selectedHeroId);
+}
+
+// --- Settings ---
+function showSettings() {
+  document.getElementById('main-menu-overlay').classList.remove('visible');
+  document.getElementById('settings-overlay').classList.add('visible');
+  hideResetConfirm();
+}
+
+function hideSettings() {
+  document.getElementById('settings-overlay').classList.remove('visible');
+  showMainMenu();
+}
+
+function showResetConfirm() {
+  document.getElementById('reset-confirm').classList.add('visible');
+}
+
+function hideResetConfirm() {
+  document.getElementById('reset-confirm').classList.remove('visible');
+}
+
+function confirmResetProgress() {
+  resetProgress();
+  hideResetConfirm();
+  hideSettings();
+  showMainMenu();
+}
+
+// --- Start Game ---
 function startGameWithHero(heroId) {
   const hero = CONFIG.HERO_DEFS[heroId];
   if (!hero) return;
+
+  // Hide all menu overlays
+  hideAllMenuOverlays();
 
   // Reset game first
   restartGame();

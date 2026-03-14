@@ -572,7 +572,7 @@
       "phase": "v1.0",
       "estimate": "4-5h",
       "priority": "medium",
-      "status": "todo",
+      "status": "done",
       "description": "Полноценное главное меню: выбор героя, выбор локации, просмотр прогресса, вход в мета-меню.",
       "subtasks": [
         "Структура: Main Menu → (Play → выбор героя → выбор локации → игра) | Meta | Settings",

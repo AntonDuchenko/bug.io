@@ -200,7 +200,7 @@ function renderPlayer() {
 
 // --- Game object ---
 const game = {
-  state: GameState.PLAYING,
+  state: GameState.MENU,
   elapsed: 0,
   lastTime: 0,
   frameCount: 0,
@@ -249,17 +249,24 @@ function gameLoop(timestamp) {
 
   // Render
   renderBackground();
-  renderXpGems();
-  renderEnemies();
-  renderProjectiles();
-  renderSkills();
-  renderPlayer();
-  if (typeof renderLocationWorld === 'function') renderLocationWorld();
-  renderDamageNumbers();
-  if (typeof renderLocationPostProcess === 'function') renderLocationPostProcess();
-  renderHUD();
-  if (typeof renderLocationHUD === 'function') renderLocationHUD();
+  if (game.state !== GameState.MENU) {
+    renderXpGems();
+    renderEnemies();
+    renderProjectiles();
+    renderSkills();
+    renderPlayer();
+    if (typeof renderLocationWorld === 'function') renderLocationWorld();
+    renderDamageNumbers();
+    if (typeof renderLocationPostProcess === 'function') renderLocationPostProcess();
+    renderHUD();
+    if (typeof renderLocationHUD === 'function') renderLocationHUD();
+  }
 }
 
 // --- Start ---
 requestAnimationFrame(gameLoop);
+
+// Launch menu flow
+if (typeof initMenuFlow === 'function') {
+  initMenuFlow();
+}

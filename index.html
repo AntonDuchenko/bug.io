@@ -626,6 +626,312 @@
       color: #7ee787;
     }
 
+    /* --- Loading Screen --- */
+    #loading-screen {
+      position: fixed;
+      inset: 0;
+      background: #0d1117;
+      display: flex;
+      flex-direction: column;
+      justify-content: center;
+      align-items: center;
+      z-index: 50;
+      transition: opacity 0.6s ease;
+    }
+
+    #loading-screen.fade-out {
+      opacity: 0;
+      pointer-events: none;
+    }
+
+    .loading-logo {
+      font-size: 48px;
+      font-weight: bold;
+      font-family: monospace;
+      color: #7ee787;
+      letter-spacing: 4px;
+      overflow: hidden;
+      white-space: nowrap;
+      border-right: 3px solid #7ee787;
+      animation: typewriter 1.2s steps(6) forwards, blink-caret 0.5s step-end infinite;
+    }
+
+    @keyframes typewriter {
+      from { width: 0; }
+      to { width: 6ch; }
+    }
+
+    @keyframes blink-caret {
+      50% { border-color: transparent; }
+    }
+
+    .loading-subtitle {
+      font-size: 14px;
+      color: #8b949e;
+      margin-top: 12px;
+      opacity: 0;
+      animation: fade-in-sub 0.5s 1.4s forwards;
+    }
+
+    @keyframes fade-in-sub {
+      to { opacity: 1; }
+    }
+
+    /* --- Main Menu --- */
+    #main-menu-overlay {
+      display: none;
+      position: fixed;
+      inset: 0;
+      background: #0d1117;
+      justify-content: center;
+      align-items: center;
+      flex-direction: column;
+      gap: 32px;
+      z-index: 30;
+      opacity: 0;
+      transition: opacity 0.4s ease;
+    }
+
+    #main-menu-overlay.visible {
+      display: flex;
+      opacity: 1;
+    }
+
+    .menu-title {
+      font-size: 56px;
+      font-weight: bold;
+      font-family: monospace;
+      color: #7ee787;
+      letter-spacing: 6px;
+      text-shadow: 0 0 30px rgba(126, 231, 135, 0.3);
+    }
+
+    .menu-subtitle {
+      font-size: 16px;
+      color: #8b949e;
+      margin-top: -16px;
+      letter-spacing: 2px;
+    }
+
+    .menu-buttons {
+      display: flex;
+      flex-direction: column;
+      gap: 12px;
+      min-width: 240px;
+    }
+
+    .menu-btn {
+      background: #161b22;
+      border: 2px solid #30363d;
+      color: #e6edf3;
+      font-size: 18px;
+      padding: 14px 32px;
+      border-radius: 10px;
+      cursor: pointer;
+      font-family: inherit;
+      transition: transform 0.15s, border-color 0.2s, background 0.2s;
+      text-align: center;
+      letter-spacing: 1px;
+    }
+
+    .menu-btn:hover {
+      transform: translateY(-3px) scale(1.02);
+      border-color: #58a6ff;
+      background: #1c2128;
+    }
+
+    .menu-btn.primary {
+      background: #238636;
+      border-color: #2ea043;
+      font-weight: bold;
+    }
+
+    .menu-btn.primary:hover {
+      background: #2ea043;
+      border-color: #3fb950;
+    }
+
+    .menu-stats {
+      display: flex;
+      gap: 24px;
+      font-size: 13px;
+      color: #8b949e;
+      font-family: monospace;
+    }
+
+    .menu-stats span {
+      color: #58a6ff;
+      font-weight: bold;
+    }
+
+    /* --- Location Select --- */
+    #location-select-overlay {
+      display: none;
+      position: fixed;
+      inset: 0;
+      background: rgba(0, 0, 0, 0.85);
+      justify-content: center;
+      align-items: center;
+      flex-direction: column;
+      gap: 20px;
+      z-index: 12;
+      opacity: 0;
+      transition: opacity 0.3s ease;
+    }
+
+    #location-select-overlay.visible {
+      display: flex;
+      opacity: 1;
+    }
+
+    .location-grid {
+      display: grid;
+      grid-template-columns: repeat(4, 1fr);
+      gap: 12px;
+      max-width: 720px;
+    }
+
+    .location-card {
+      background: #161b22;
+      border: 2px solid #30363d;
+      border-radius: 10px;
+      padding: 16px 14px;
+      width: 160px;
+      text-align: center;
+      cursor: pointer;
+      transition: transform 0.15s, border-color 0.2s;
+      position: relative;
+    }
+
+    .location-card:hover:not(.location-locked) {
+      transform: scale(1.05) translateY(-4px);
+      border-color: #58a6ff;
+    }
+
+    .location-card.location-locked {
+      opacity: 0.4;
+      cursor: not-allowed;
+    }
+
+    .location-card.location-selected {
+      border-color: #3fb950;
+      background: #1a2e1a;
+    }
+
+    .location-card-emoji {
+      font-size: 32px;
+      margin-bottom: 6px;
+    }
+
+    .location-card-name {
+      font-size: 13px;
+      font-weight: bold;
+      color: #e6edf3;
+      margin-bottom: 4px;
+    }
+
+    .location-card-desc {
+      font-size: 10px;
+      color: #8b949e;
+      min-height: 24px;
+    }
+
+    .location-card-lock {
+      font-size: 11px;
+      color: #f85149;
+      margin-top: 4px;
+    }
+
+    /* --- Settings Overlay --- */
+    #settings-overlay {
+      display: none;
+      position: fixed;
+      inset: 0;
+      background: rgba(0, 0, 0, 0.85);
+      justify-content: center;
+      align-items: center;
+      flex-direction: column;
+      gap: 20px;
+      z-index: 30;
+      opacity: 0;
+      transition: opacity 0.3s ease;
+    }
+
+    #settings-overlay.visible {
+      display: flex;
+      opacity: 1;
+    }
+
+    .settings-box {
+      background: #161b22;
+      border: 2px solid #30363d;
+      border-radius: 12px;
+      padding: 32px;
+      text-align: center;
+      min-width: 320px;
+    }
+
+    .settings-title {
+      font-size: 24px;
+      font-weight: bold;
+      color: #e6edf3;
+      margin-bottom: 24px;
+    }
+
+    .settings-item {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      padding: 12px 0;
+      border-bottom: 1px solid #21262d;
+    }
+
+    .settings-label {
+      font-size: 14px;
+      color: #e6edf3;
+    }
+
+    .settings-danger-btn {
+      background: #21262d;
+      border: 1px solid #f85149;
+      color: #f85149;
+      font-size: 13px;
+      padding: 6px 16px;
+      border-radius: 6px;
+      cursor: pointer;
+      font-family: inherit;
+      transition: background 0.15s;
+    }
+
+    .settings-danger-btn:hover {
+      background: #f8514922;
+    }
+
+    .settings-confirm {
+      margin-top: 16px;
+      padding: 12px;
+      background: #1c1210;
+      border: 1px solid #f85149;
+      border-radius: 8px;
+      display: none;
+    }
+
+    .settings-confirm.visible {
+      display: block;
+    }
+
+    .settings-confirm p {
+      font-size: 13px;
+      color: #f85149;
+      margin-bottom: 12px;
+    }
+
+    .settings-confirm-btns {
+      display: flex;
+      gap: 8px;
+      justify-content: center;
+    }
+
     /* --- FPS counter --- */
     #fps-counter {
       position: fixed;
@@ -848,14 +1154,64 @@
 <body>
   <canvas id="game"></canvas>
 
+  <!-- Loading Screen -->
+  <div id="loading-screen">
+    <div class="loading-logo">Bug.io</div>
+    <div class="loading-subtitle">Vampire Survivors for Developers</div>
+  </div>
+
+  <!-- Main Menu -->
+  <div id="main-menu-overlay">
+    <div class="menu-title">Bug.io</div>
+    <div class="menu-subtitle">Survive the codebase</div>
+    <div class="menu-buttons">
+      <button class="menu-btn primary" onclick="menuPlay()">Play</button>
+      <button class="menu-btn" onclick="showMetaMenu()">Meta Shop</button>
+      <button class="menu-btn" onclick="showSettings()">Settings</button>
+    </div>
+    <div class="menu-stats" id="menu-stats"></div>
+  </div>
+
+  <!-- Hero Select -->
   <div id="hero-select-overlay" class="overlay" style="gap:20px;">
     <div style="font-size:28px;font-weight:bold;letter-spacing:2px;">Choose Your Hero</div>
     <div id="hero-cards" style="display:flex;gap:16px;"></div>
+    <button class="end-btn" onclick="backToMainMenu()" style="margin-top:8px;">Back</button>
+  </div>
+
+  <!-- Location Select -->
+  <div id="location-select-overlay">
+    <div style="font-size:24px;font-weight:bold;letter-spacing:2px;">Choose Location</div>
+    <div class="location-grid" id="location-cards"></div>
+    <div style="display:flex;gap:12px;margin-top:8px;">
+      <button class="end-btn" onclick="backToHeroSelect()">Back</button>
+      <button class="end-btn primary" id="location-start-btn" onclick="startWithSelectedLocation()">Start Game</button>
+    </div>
+  </div>
+
+  <!-- Settings -->
+  <div id="settings-overlay">
+    <div class="settings-box">
+      <div class="settings-title">Settings</div>
+      <div class="settings-item">
+        <span class="settings-label">Reset all progress</span>
+        <button class="settings-danger-btn" onclick="showResetConfirm()">Reset</button>
+      </div>
+      <div class="settings-confirm" id="reset-confirm">
+        <p>Are you sure? This will erase ALL your progress, commits, and unlocks.</p>
+        <div class="settings-confirm-btns">
+          <button class="settings-danger-btn" onclick="confirmResetProgress()">Yes, Reset Everything</button>
+          <button class="end-btn" onclick="hideResetConfirm()">Cancel</button>
+        </div>
+      </div>
+    </div>
+    <button class="end-btn" onclick="hideSettings()">Back</button>
   </div>
 
   <div id="pause-overlay" class="overlay">
     <h1>PAUSED</h1>
     <p>Press Escape to resume</p>
+    <button class="end-btn" onclick="pauseOverlay.classList.remove('visible');game.state=GameState.MENU;backToMainMenu();" style="margin-top:16px;">Main Menu</button>
   </div>
 
   <div id="levelup-overlay" class="overlay">
@@ -869,7 +1225,7 @@
     <div id="end-stats"></div>
     <div id="end-buttons">
       <button class="end-btn primary" onclick="restartGame()">Quick Restart</button>
-      <button class="end-btn" onclick="document.getElementById('end-overlay').classList.remove('visible');showHeroSelect()">New Hero</button>
+      <button class="end-btn" onclick="document.getElementById('end-overlay').classList.remove('visible');backToMainMenu()">Main Menu</button>
       <button class="end-btn" onclick="document.getElementById('end-overlay').classList.remove('visible');showMetaMenu()">Meta Menu</button>
     </div>
   </div>
