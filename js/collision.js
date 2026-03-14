@@ -142,6 +142,22 @@ function updateCollisions(dt) {
     }
   }
 
+  // Hackathon Junior companion vs enemies
+  if (typeof juniorCompanion !== 'undefined' && juniorCompanion && juniorCompanion.alive) {
+    const jr = juniorCompanion;
+    const nearJr = getEnemiesNear(jr.x, jr.y, jr.radius + 30);
+    for (const e of nearJr) {
+      if (e.hp <= 0) continue;
+      if (circleCollide(jr, e)) {
+        if (!jr._iframeTimer || jr._iframeTimer <= 0) {
+          damageJunior(e.damage);
+          jr._iframeTimer = 0.5;
+        }
+      }
+    }
+    if (jr._iframeTimer > 0) jr._iframeTimer -= dt;
+  }
+
   // Projectiles vs enemies
   for (let pi = projectiles.length - 1; pi >= 0; pi--) {
     const p = projectiles[pi];

@@ -20,6 +20,7 @@ const LOCATIONS = [
   { id: 'cloud',              name: 'Cloud Infrastructure',emoji: '☁️', cost: 50,  desc: 'Credit system for skills' },
   { id: 'incident',           name: 'Incident / Outage',   emoji: '🚨', cost: 80,  desc: 'Popup quizzes every 60s' },
   { id: 'hackathon',          name: 'Hackathon',           emoji: '🤝', cost: 80,  desc: 'Junior companion AI' },
+  { id: 'infinite_loop',      name: 'Infinite Loop',       emoji: '♻️', cost: 100, desc: 'Enemies reset every 3 min' },
   { id: 'production_server',  name: 'Production Server',   emoji: '🔥', cost: 150, desc: 'No idle allowed' },
 ];
 
@@ -321,6 +322,11 @@ function startGameWithHero(heroId) {
   addSkill(hero.startSkill);
   for (const key in upgradeLevels) delete upgradeLevels[key];
   upgradeLevels[hero.startSkill] = 1;
+
+  // Initialize location mechanics
+  if (typeof initLocation === 'function') {
+    initLocation(activeLocation);
+  }
 
   // Apply passive bonus
   if (hero.passive) {

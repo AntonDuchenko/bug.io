@@ -677,6 +677,83 @@
       transition: width 0.2s ease;
       border-radius: 5px;
     }
+
+    /* --- Incident/Outage Popup --- */
+    #incident-overlay {
+      display: none;
+      position: fixed;
+      inset: 0;
+      background: rgba(0, 0, 0, 0.7);
+      justify-content: center;
+      align-items: center;
+      z-index: 20;
+      flex-direction: column;
+      gap: 16px;
+    }
+
+    #incident-overlay.visible {
+      display: flex;
+    }
+
+    .incident-box {
+      background: #161b22;
+      border: 2px solid #f85149;
+      border-radius: 12px;
+      padding: 24px 32px;
+      max-width: 420px;
+      text-align: center;
+    }
+
+    .incident-title {
+      font-size: 20px;
+      font-weight: bold;
+      color: #f85149;
+      margin-bottom: 6px;
+    }
+
+    .incident-question {
+      font-size: 14px;
+      color: #e6edf3;
+      margin-bottom: 16px;
+    }
+
+    .incident-timer {
+      font-size: 28px;
+      font-weight: bold;
+      color: #e3b341;
+      font-family: monospace;
+      margin-bottom: 12px;
+    }
+
+    .incident-options {
+      display: flex;
+      flex-direction: column;
+      gap: 8px;
+    }
+
+    .incident-btn {
+      background: #21262d;
+      border: 1px solid #30363d;
+      color: #e6edf3;
+      font-size: 14px;
+      padding: 10px 16px;
+      border-radius: 8px;
+      cursor: pointer;
+      font-family: inherit;
+      transition: background 0.15s, border-color 0.15s;
+      text-align: left;
+    }
+
+    .incident-btn:hover {
+      background: #30363d;
+      border-color: #58a6ff;
+    }
+
+    .incident-result {
+      font-size: 16px;
+      font-weight: bold;
+      margin-top: 8px;
+    }
   </style>
 </head>
 <body>
@@ -718,6 +795,16 @@
 
   <div id="toast-container"></div>
   <div id="fps-counter"></div>
+
+  <div id="incident-overlay">
+    <div class="incident-box">
+      <div class="incident-title">🚨 INCIDENT ALERT</div>
+      <div class="incident-question" id="incident-question"></div>
+      <div class="incident-timer" id="incident-timer">5</div>
+      <div class="incident-options" id="incident-options"></div>
+      <div class="incident-result" id="incident-result"></div>
+    </div>
+  </div>
 
   <div id="boss-hp-bar">
     <div id="boss-hp-text">Windows XP — 2000/2000</div>

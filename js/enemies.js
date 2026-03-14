@@ -325,7 +325,9 @@ function updateEnemies(dt) {
     const debtMult = typeof getTechDebtMultiplier === 'function' ? getTechDebtMultiplier() : 1;
     // During refactoring, enemies don't move
     const refactorFreeze = (typeof refactoring !== 'undefined' && refactoring) ? 0 : 1;
-    const speedMult = e.slowFactor * debtMult * refactorFreeze;
+    // Incident/Outage: enemy speed boost from wrong answer
+    const incidentEnemyMult = typeof getIncidentEnemySpeedMult === 'function' ? getIncidentEnemySpeedMult(e) : 1;
+    const speedMult = e.slowFactor * debtMult * refactorFreeze * incidentEnemyMult;
     e.x += e.dirX * e.speed * speedMult * dt;
     e.y += e.dirY * e.speed * speedMult * dt;
 

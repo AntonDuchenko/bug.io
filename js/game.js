@@ -119,6 +119,8 @@ function updatePlayer(dt) {
   let speedMult = 1;
   if (player._bsodSlowTimer > 0) speedMult *= 0.2;
   if (player._slowedByField) speedMult *= 0.5;
+  // Incident/Outage speed bonus
+  if (typeof getIncidentSpeedMult === 'function') speedMult *= getIncidentSpeedMult();
 
   player.x += dx * player.speed * speedMult * dt;
   player.y += dy * player.speed * speedMult * dt;
@@ -241,7 +243,7 @@ function gameLoop(timestamp) {
     updateCollisions(dt);
     updateXpGems(dt);
     updateDamageNumbers(dt);
-    if (typeof updateLegacyMechanic === 'function') updateLegacyMechanic(dt);
+    if (typeof updateLocationMechanics === 'function') updateLocationMechanics(dt);
     checkVictory();
   }
 
@@ -252,7 +254,9 @@ function gameLoop(timestamp) {
   renderProjectiles();
   renderSkills();
   renderPlayer();
+  if (typeof renderLocationWorld === 'function') renderLocationWorld();
   renderDamageNumbers();
+  if (typeof renderLocationPostProcess === 'function') renderLocationPostProcess();
   renderHUD();
   if (typeof renderLocationHUD === 'function') renderLocationHUD();
 }

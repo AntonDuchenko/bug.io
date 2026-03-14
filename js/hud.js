@@ -297,7 +297,7 @@ function restartGame() {
   for (const key in evolvedSkills) delete evolvedSkills[key];
 
   // Reset location state
-  if (typeof resetLocationState === 'function') resetLocationState();
+  if (typeof initLocation === 'function') initLocation(activeLocation);
 
   // Reset HUD animation
   renderHUD._displayHp = CONFIG.PLAYER_MAX_HP;
@@ -306,6 +306,7 @@ function restartGame() {
   document.getElementById('end-overlay').classList.remove('visible');
   document.getElementById('levelup-overlay').classList.remove('visible');
   document.getElementById('pause-overlay').classList.remove('visible');
+  document.getElementById('incident-overlay').classList.remove('visible');
   const heroOverlay = document.getElementById('hero-select-overlay');
   if (heroOverlay) heroOverlay.classList.remove('visible');
   const metaOverlay = document.getElementById('meta-overlay');

@@ -512,7 +512,7 @@
       "phase": "v1.0",
       "estimate": "12-16h",
       "priority": "medium",
-      "status": "todo",
+      "status": "done",
       "description": "Dark Mode, Cloud Infrastructure, Incident/Outage, Hackathon, Infinite Loop, Production Server — каждый с уникальной механикой.",
       "subtasks": [
         "Dark Mode: тёмный overlay + вырезать круг через canvas compositing (destination-out), лампочки расширяют обзор",

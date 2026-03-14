@@ -33,6 +33,9 @@ function updateXpGems(dt) {
       const dist = Math.sqrt(distSq);
       if (dist < player.radius) {
         addXp(g.value);
+        // Location hooks on gem collected
+        if (typeof onDarkModeGemCollected === 'function') onDarkModeGemCollected(g.x, g.y);
+        if (typeof onCloudGemCollected === 'function') onCloudGemCollected();
         xpGems.splice(i, 1);
         continue;
       }

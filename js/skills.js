@@ -654,13 +654,18 @@ function updateSkills(dt) {
     // Cooldown
     skill.cooldown -= dt;
     if (skill.cooldown <= 0) {
-      // Use evolved fire if applicable
-      if (skill.evolved && EVOLVED_FIRE[skill.evolved]) {
-        EVOLVED_FIRE[skill.evolved](skill, def);
+      // Cloud Infrastructure: check credits before firing
+      if (typeof cloudUseCredits === 'function' && !cloudUseCredits(typeof CLOUD_SKILL_COST !== 'undefined' ? CLOUD_SKILL_COST : 3)) {
+        skill.cooldown = params.cooldown * cdMult;
       } else {
-        def.fire(skill);
+        // Use evolved fire if applicable
+        if (skill.evolved && EVOLVED_FIRE[skill.evolved]) {
+          EVOLVED_FIRE[skill.evolved](skill, def);
+        } else {
+          def.fire(skill);
+        }
+        skill.cooldown = params.cooldown * cdMult;
       }
-      skill.cooldown = params.cooldown * cdMult;
     }
 
     // Laser tick damage
