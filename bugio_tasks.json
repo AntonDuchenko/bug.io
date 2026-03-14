@@ -541,7 +541,7 @@
       "phase": "v1.0",
       "estimate": "5-6h",
       "priority": "medium",
-      "status": "todo",
+      "status": "done",
       "description": "Stack Overflow (клонирование при попадании) и The Blockchain (неуязвимость до решения пазла).",
       "subtasks": [
         "Stack Overflow: HP=1500, при каждом попадании 30% шанс создать клон",

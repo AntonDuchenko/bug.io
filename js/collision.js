@@ -167,14 +167,26 @@ function updateCollisions(dt) {
       const e = nearProj[ei];
       if (e.hp <= 0) continue;
       if (circleCollide(p, e)) {
+        // Blockchain immunity check
+        if (e.immune) {
+          spawnDamageNumber(e.x, e.y - e.radius, 'IMMUNE', '#627eea');
+          if (!p.piercing) {
+            hit = true;
+            break;
+          }
+          continue;
+        }
         let dmg = p.damage;
-        // Apply global damage multiplier (for passives applied at fire time this is already included, but for base skills it's not)
         e.hp -= dmg;
         e.hitFlash = 0.1;
         e.damaged = true;
         spawnDamageNumber(e.x, e.y - e.radius, Math.round(dmg));
         if (e.hp <= 0) {
           killCount++;
+        }
+        // Stack Overflow: clone on hit
+        if (e.isBoss && typeof tryStackOverflowClone === 'function') {
+          tryStackOverflowClone(e);
         }
         // Breakpoint evolution: freeze enemy on hit
         if (p.onHit === 'freeze' && e.hp > 0) {
@@ -208,13 +220,20 @@ function removeDeadEnemies() {
         handleEnemyDeath(e);
       }
       // Clear boss reference
-      if (e.isBoss && bossState.active === e) {
-        bossState.active = null;
-        bossState.warningShown = false;
-        if (typeof bossesKilledThisRun !== 'undefined') bossesKilledThisRun++;
-        if (typeof gameEvents !== 'undefined') gameEvents.emit('bossKill', e);
-        const bossBar = document.getElementById('boss-hp-bar');
-        if (bossBar) bossBar.classList.remove('visible');
+      if (e.isBoss) {
+        // Stack Overflow clone cleanup
+        if (e.isClone && e.type === 'stackOverflow') {
+          bossState.cloneCount = Math.max(0, bossState.cloneCount - 1);
+        }
+        if (bossState.active === e) {
+          bossState.active = null;
+          bossState.warningShown = false;
+          bossState.immune = false;
+          if (typeof bossesKilledThisRun !== 'undefined') bossesKilledThisRun++;
+          if (typeof gameEvents !== 'undefined') gameEvents.emit('bossKill', e);
+          const bossBar = document.getElementById('boss-hp-bar');
+          if (bossBar) bossBar.classList.remove('visible');
+        }
       }
       enemies.splice(i, 1);
     }

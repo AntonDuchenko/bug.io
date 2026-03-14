@@ -282,8 +282,16 @@ function restartGame() {
   bossState.aoeTimer = 0;
   bossState.aoeWarningTimer = 0;
   bossState.aoeActive = null;
+  bossState.rotationIndex = 0;
+  bossState.cloneCount = 0;
+  bossState.puzzleTimer = 0;
+  bossState.puzzleActive = false;
+  bossState.immune = false;
+  bossState.vulnerableTimer = 0;
   const bossBar = document.getElementById('boss-hp-bar');
   if (bossBar) bossBar.classList.remove('visible');
+  const puzzleOv = document.getElementById('puzzle-overlay');
+  if (puzzleOv) puzzleOv.classList.remove('visible');
 
   // Reset skills
   resetSkills();

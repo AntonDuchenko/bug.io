@@ -5,6 +5,22 @@
 const visualEffects = [];
 const activeSkills = {};
 
+// --- Damage helper (respects boss immunity) ---
+function dealDamageToEnemy(e, dmg, showNumber) {
+  if (e.immune) {
+    if (showNumber !== false) spawnDamageNumber(e.x, e.y - e.radius, 'IMMUNE', '#627eea');
+    return false;
+  }
+  e.hp -= dmg;
+  e.hitFlash = 0.1;
+  e.damaged = true;
+  // Stack Overflow clone on hit
+  if (e.isBoss && typeof tryStackOverflowClone === 'function') {
+    tryStackOverflowClone(e);
+  }
+  return true;
+}
+
 // --- Skill Definitions ---
 
 const SKILL_DEFS = {
@@ -144,14 +160,13 @@ const SKILL_DEFS = {
         const dx = e.x - player.x;
         const dy = e.y - player.y;
         if (dx * dx + dy * dy < p.radius * p.radius) {
-          e.hp -= p.damage;
-          e.hitFlash = 0.1;
-          e.damaged = true;
-          spawnDamageNumber(e.x, e.y - e.radius, p.damage);
-          if (e.hp <= 0) killCount++;
-          if (p.slow && e.hp > 0) {
-            e.slowTimer = 2;
-            e.slowFactor = 0.5;
+          if (dealDamageToEnemy(e, p.damage)) {
+            spawnDamageNumber(e.x, e.y - e.radius, p.damage);
+            if (e.hp <= 0) killCount++;
+            if (p.slow && e.hp > 0) {
+              e.slowTimer = 2;
+              e.slowFactor = 0.5;
+            }
           }
         }
       }
@@ -293,11 +308,10 @@ const SKILL_DEFS = {
         e.x = Math.max(e.radius, Math.min(CONFIG.MAP_WIDTH - e.radius, player.x + Math.cos(angle) * dist));
         e.y = Math.max(e.radius, Math.min(CONFIG.MAP_HEIGHT - e.radius, player.y + Math.sin(angle) * dist));
         // Damage
-        e.hp -= p.damage;
-        e.hitFlash = 0.1;
-        e.damaged = true;
-        spawnDamageNumber(e.x, e.y - e.radius, p.damage);
-        if (e.hp <= 0) killCount++;
+        if (dealDamageToEnemy(e, p.damage)) {
+          spawnDamageNumber(e.x, e.y - e.radius, p.damage);
+          if (e.hp <= 0) killCount++;
+        }
       }
     },
   },
@@ -337,11 +351,10 @@ const SKILL_DEFS = {
         const perp = Math.abs(dx * (-player.dirY) + dy * player.dirX);
         if (perp > p.width / 2) continue;
         const dmg = applyCrit(p.damage * (player.damageMult || 1));
-        e.hp -= dmg.value;
-        e.hitFlash = 0.1;
-        e.damaged = true;
-        spawnDamageNumber(e.x, e.y - e.radius, Math.round(dmg.value), dmg.crit ? '#ff6b6b' : undefined);
-        if (e.hp <= 0) killCount++;
+        if (dealDamageToEnemy(e, dmg.value)) {
+          spawnDamageNumber(e.x, e.y - e.radius, Math.round(dmg.value), dmg.crit ? '#ff6b6b' : undefined);
+          if (e.hp <= 0) killCount++;
+        }
       }
       // Visual: rectangular flash
       visualEffects.push({
@@ -413,11 +426,10 @@ const SKILL_DEFS = {
           const dy = e.y - player.y;
           if (dx * dx + dy * dy < b.aoeRadius * b.aoeRadius) {
             const dmg = applyCrit(p.damage * (player.damageMult || 1));
-            e.hp -= dmg.value;
-            e.hitFlash = 0.1;
-            e.damaged = true;
-            spawnDamageNumber(e.x, e.y - e.radius, Math.round(dmg.value), dmg.crit ? '#ff6b6b' : undefined);
-            if (e.hp <= 0) killCount++;
+            if (dealDamageToEnemy(e, dmg.value)) {
+              spawnDamageNumber(e.x, e.y - e.radius, Math.round(dmg.value), dmg.crit ? '#ff6b6b' : undefined);
+              if (e.hp <= 0) killCount++;
+            }
           }
         }
         visualEffects.push({
@@ -587,14 +599,13 @@ const EVOLVED_FIRE = {
       const dy = e.y - player.y;
       if (dx * dx + dy * dy < evoRadius * evoRadius) {
         const dmg = p.damage * (player.damageMult || 1);
-        e.hp -= dmg;
-        e.hitFlash = 0.1;
-        e.damaged = true;
-        spawnDamageNumber(e.x, e.y - e.radius, Math.round(dmg));
-        if (e.hp <= 0) killCount++;
-        if (p.slow && e.hp > 0) {
-          e.slowTimer = 2;
-          e.slowFactor = 0.5;
+        if (dealDamageToEnemy(e, dmg)) {
+          spawnDamageNumber(e.x, e.y - e.radius, Math.round(dmg));
+          if (e.hp <= 0) killCount++;
+          if (p.slow && e.hp > 0) {
+            e.slowTimer = 2;
+            e.slowFactor = 0.5;
+          }
         }
       }
     }
@@ -681,14 +692,13 @@ function updateSkills(dt) {
             }
             // Apply global damage multiplier
             dmg *= (player.damageMult || 1);
-            e.hp -= dmg;
-            e.hitFlash = 0.05;
-            e.damaged = true;
-            if (Math.random() < dt * 3) {
-              const displayDmg = Math.round(skill.laserDps * 0.3 * (player.damageMult || 1));
-              spawnDamageNumber(e.x, e.y - e.radius, displayDmg);
+            if (dealDamageToEnemy(e, dmg, false)) {
+              if (Math.random() < dt * 3) {
+                const displayDmg = Math.round(skill.laserDps * 0.3 * (player.damageMult || 1));
+                spawnDamageNumber(e.x, e.y - e.radius, displayDmg);
+              }
+              if (e.hp <= 0) killCount++;
             }
-            if (e.hp <= 0) killCount++;
           }
         }
       }

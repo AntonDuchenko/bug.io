@@ -25,6 +25,14 @@ const bossState = {
   aoeTimer: 0,
   aoeWarningTimer: 0,
   aoeActive: null,    // { x, y, radius, timer }
+  rotationIndex: 0,   // cycles through BOSS_ROTATION
+  // Stack Overflow
+  cloneCount: 0,
+  // Blockchain
+  puzzleTimer: 0,
+  puzzleActive: false,
+  immune: false,
+  vulnerableTimer: 0,
 };
 
 function spawnEnemy(type, isElite) {
@@ -73,7 +81,14 @@ function spawnEnemy(type, isElite) {
 }
 
 function spawnBoss() {
-  const def = CONFIG.BOSS;
+  // Pick boss from rotation
+  const rotation = CONFIG.BOSS_ROTATION;
+  const bossType = rotation[bossState.rotationIndex % rotation.length];
+  bossState.rotationIndex++;
+
+  const def = CONFIG.BOSS_TYPES[bossType];
+  if (!def) return;
+
   const angle = Math.random() * Math.PI * 2;
   const dist = Math.max(canvasWidth, canvasHeight) / 2 + CONFIG.SPAWN_MARGIN;
   const x = player.x + Math.cos(angle) * dist;
@@ -88,9 +103,8 @@ function spawnBoss() {
     maxHp: def.hp,
     damage: def.damage,
     xp: def.xp,
-    type: 'windowsXP',
+    type: bossType,
     color: def.color,
-    shape: def.shape,
     dirX: 0, dirY: 0,
     dirFrame: 0,
     hitFlash: 0,
@@ -101,14 +115,31 @@ function spawnBoss() {
     frozen: false, frozenTimer: 0,
     regenRate: 0, spawnOnDeath: 0,
     slowRadius: 0, slowFieldFactor: 1,
+    // Boss-type-specific
+    immune: bossType === 'blockchain',
+    isClone: false,
   };
 
   enemies.push(boss);
   bossState.active = boss;
-  bossState.aoeTimer = def.aoeInterval;
-  bossState.aoeWarningTimer = 0;
   bossState.warningShown = false;
   bossState.warningTimer = 0;
+
+  // Reset type-specific state
+  if (bossType === 'windowsXP') {
+    bossState.aoeTimer = def.aoeInterval;
+    bossState.aoeWarningTimer = 0;
+    bossState.aoeActive = null;
+  }
+  if (bossType === 'stackOverflow') {
+    bossState.cloneCount = 0;
+  }
+  if (bossType === 'blockchain') {
+    bossState.puzzleTimer = def.puzzleInterval;
+    bossState.puzzleActive = false;
+    bossState.immune = true;
+    bossState.vulnerableTimer = 0;
+  }
 
   // Show boss HP bar
   const bossBar = document.getElementById('boss-hp-bar');
@@ -173,77 +204,107 @@ function updateSpawner(dt) {
 }
 
 function updateBoss(dt, elapsed) {
-  const def = CONFIG.BOSS;
+  const baseDef = CONFIG.BOSS;
 
   // Boss warning
-  if (!bossState.active && elapsed >= bossState.nextSpawnTime - def.warningTime && !bossState.warningShown) {
+  if (!bossState.active && elapsed >= bossState.nextSpawnTime - baseDef.warningTime && !bossState.warningShown) {
     bossState.warningShown = true;
-    bossState.warningTimer = def.warningTime;
+    bossState.warningTimer = baseDef.warningTime;
   }
 
   if (bossState.warningTimer > 0) {
     bossState.warningTimer -= dt;
     if (bossState.warningTimer <= 0 && !bossState.active) {
       spawnBoss();
-      bossState.nextSpawnTime = elapsed + def.spawnInterval;
+      bossState.nextSpawnTime = elapsed + baseDef.spawnInterval;
     }
   }
 
   // Spawn without warning if time passed
   if (!bossState.active && !bossState.warningShown && elapsed >= bossState.nextSpawnTime) {
     bossState.warningShown = true;
-    bossState.warningTimer = def.warningTime;
+    bossState.warningTimer = baseDef.warningTime;
   }
 
   // Boss AI
   if (bossState.active) {
     const boss = bossState.active;
+    const def = CONFIG.BOSS_TYPES[boss.type];
+    if (!def) return;
+
     if (boss.hp <= 0) {
       bossState.active = null;
       bossState.warningShown = false;
       bossState.aoeActive = null;
+      bossState.immune = false;
+      // Hide puzzle if blockchain dies during puzzle
+      if (bossState.puzzleActive) {
+        bossState.puzzleActive = false;
+        document.getElementById('puzzle-overlay').classList.remove('visible');
+        game.state = GameState.PLAYING;
+      }
       const bossBar = document.getElementById('boss-hp-bar');
       if (bossBar) bossBar.classList.remove('visible');
       return;
     }
 
     // Enrage at low HP
-    if (boss.hp / boss.maxHp < def.enrageThreshold) {
-      boss.speed = def.speedEnraged;
+    if (def.enrageThreshold && boss.hp / boss.maxHp < def.enrageThreshold) {
+      boss.speed = def.speedEnraged || def.speed;
     }
 
-    // AOE attack
-    bossState.aoeTimer -= dt;
-    if (bossState.aoeTimer <= 0 && !bossState.aoeActive) {
-      // Start warning
-      bossState.aoeWarningTimer = def.aoeWarning;
-      bossState.aoeTimer = def.aoeInterval;
-    }
+    // --- Windows XP: AOE BSOD attack ---
+    if (boss.type === 'windowsXP') {
+      bossState.aoeTimer -= dt;
+      if (bossState.aoeTimer <= 0 && !bossState.aoeActive) {
+        bossState.aoeWarningTimer = def.aoeWarning;
+        bossState.aoeTimer = def.aoeInterval;
+      }
 
-    if (bossState.aoeWarningTimer > 0) {
-      bossState.aoeWarningTimer -= dt;
-      if (bossState.aoeWarningTimer <= 0) {
-        // Execute AOE - freeze zone
-        bossState.aoeActive = {
-          x: boss.x, y: boss.y,
-          radius: def.aoeRadius,
-          timer: def.aoeDuration,
-        };
-        // Freeze enemies in zone (for visual effect) and damage player if in range
-        const dx = player.x - boss.x;
-        const dy = player.y - boss.y;
-        if (dx * dx + dy * dy < def.aoeRadius * def.aoeRadius) {
-          // Player freeze: slow to 20% for duration
-          player._bsodSlowTimer = def.aoeDuration;
+      if (bossState.aoeWarningTimer > 0) {
+        bossState.aoeWarningTimer -= dt;
+        if (bossState.aoeWarningTimer <= 0) {
+          bossState.aoeActive = {
+            x: boss.x, y: boss.y,
+            radius: def.aoeRadius,
+            timer: def.aoeDuration,
+          };
+          const dx = player.x - boss.x;
+          const dy = player.y - boss.y;
+          if (dx * dx + dy * dy < def.aoeRadius * def.aoeRadius) {
+            player._bsodSlowTimer = def.aoeDuration;
+          }
+        }
+      }
+
+      if (bossState.aoeActive) {
+        bossState.aoeActive.timer -= dt;
+        if (bossState.aoeActive.timer <= 0) {
+          bossState.aoeActive = null;
         }
       }
     }
 
-    // Active AOE zone
-    if (bossState.aoeActive) {
-      bossState.aoeActive.timer -= dt;
-      if (bossState.aoeActive.timer <= 0) {
-        bossState.aoeActive = null;
+    // --- The Blockchain: puzzle + immunity ---
+    if (boss.type === 'blockchain') {
+      // Vulnerable timer countdown
+      if (bossState.vulnerableTimer > 0) {
+        bossState.vulnerableTimer -= dt;
+        boss.immune = false;
+        bossState.immune = false;
+        if (bossState.vulnerableTimer <= 0) {
+          boss.immune = true;
+          bossState.immune = true;
+        }
+      }
+
+      // Puzzle timer
+      if (!bossState.puzzleActive && bossState.vulnerableTimer <= 0) {
+        bossState.puzzleTimer -= dt;
+        if (bossState.puzzleTimer <= 0) {
+          showBlockchainPuzzle(boss);
+          bossState.puzzleTimer = def.puzzleInterval;
+        }
       }
     }
 
@@ -255,12 +316,17 @@ function updateBoss(dt, elapsed) {
 function updateBossHpBar(boss) {
   const fill = document.getElementById('boss-hp-fill');
   const text = document.getElementById('boss-hp-text');
+  const def = CONFIG.BOSS_TYPES[boss.type];
+  if (!def) return;
+
   if (fill) {
     fill.style.width = Math.max(0, (boss.hp / boss.maxHp) * 100) + '%';
-    fill.style.backgroundColor = boss.hp / boss.maxHp < 0.5 ? '#f85149' : CONFIG.BOSS.color;
+    fill.style.backgroundColor = boss.hp / boss.maxHp < 0.5 ? '#f85149' : def.color;
   }
   if (text) {
-    text.textContent = `Windows XP — ${Math.ceil(boss.hp)}/${boss.maxHp}`;
+    let label = def.name;
+    if (boss.immune) label += ' 🛡️ IMMUNE';
+    text.textContent = `${label} — ${Math.ceil(boss.hp)}/${boss.maxHp}`;
   }
 }
 
@@ -437,14 +503,15 @@ function renderEnemies() {
     }
   }
 
-  // Boss AOE warning
-  if (bossState.active && bossState.aoeWarningTimer > 0) {
+  // Boss AOE warning (Windows XP only)
+  if (bossState.active && bossState.active.type === 'windowsXP' && bossState.aoeWarningTimer > 0) {
     const boss = bossState.active;
+    const xpDef = CONFIG.BOSS_TYPES.windowsXP;
     const flash = Math.sin(bossState.aoeWarningTimer * 10) * 0.5 + 0.5;
     ctx.globalAlpha = flash * 0.3;
     ctx.fillStyle = '#f85149';
     ctx.beginPath();
-    ctx.arc(boss.x, boss.y, CONFIG.BOSS.aoeRadius, 0, Math.PI * 2);
+    ctx.arc(boss.x, boss.y, xpDef.aoeRadius, 0, Math.PI * 2);
     ctx.fill();
     ctx.globalAlpha = flash * 0.6;
     ctx.strokeStyle = '#f85149';
@@ -456,7 +523,7 @@ function renderEnemies() {
   // Active BSOD zone
   if (bossState.aoeActive) {
     const aoe = bossState.aoeActive;
-    const alpha = aoe.timer / CONFIG.BOSS.aoeDuration;
+    const alpha = aoe.timer / CONFIG.BOSS_TYPES.windowsXP.aoeDuration;
     ctx.globalAlpha = alpha * 0.25;
     ctx.fillStyle = '#0078d4';
     ctx.beginPath();
@@ -482,20 +549,98 @@ function renderEnemies() {
     ctx.fillStyle = '#f85149';
     ctx.font = 'bold 24px monospace';
     ctx.textAlign = 'center';
-    ctx.fillText('⚠️ BOSS INCOMING', canvasWidth / 2, canvasHeight / 2 - 60);
+    const nextType = CONFIG.BOSS_ROTATION[bossState.rotationIndex % CONFIG.BOSS_ROTATION.length];
+    const nextDef = CONFIG.BOSS_TYPES[nextType];
+    const bossName = nextDef ? nextDef.name : 'BOSS';
+    ctx.fillText(`⚠️ ${bossName.toUpperCase()} INCOMING`, canvasWidth / 2, canvasHeight / 2 - 60);
     ctx.globalAlpha = 1;
   }
 }
 
 function renderBoss(e, fill) {
-  // Windows XP style: rounded rectangle with logo
   const r = e.radius;
-  ctx.fillStyle = fill;
+  const def = CONFIG.BOSS_TYPES[e.type];
+  if (!def) return;
 
-  // Body (rounded rect)
+  // Clone semi-transparency
+  if (e.isClone) ctx.globalAlpha = 0.55;
+
+  if (e.type === 'windowsXP') {
+    // Windows XP style: rounded rectangle with logo
+    ctx.fillStyle = fill;
+    drawRoundedRect(e.x, e.y, r, fill);
+    ctx.fillStyle = '#ffffff';
+    ctx.font = `bold ${Math.round(r * 0.5)}px monospace`;
+    ctx.textAlign = 'center';
+    ctx.textBaseline = 'middle';
+    ctx.fillText('XP', e.x, e.y - r * 0.15);
+    ctx.font = `${Math.round(r * 0.25)}px monospace`;
+    ctx.fillText('Windows', e.x, e.y + r * 0.3);
+    ctx.textBaseline = 'alphabetic';
+
+  } else if (e.type === 'stackOverflow') {
+    // Stack Overflow: orange rounded rect with SO logo
+    ctx.fillStyle = fill;
+    drawRoundedRect(e.x, e.y, r, fill);
+    ctx.fillStyle = '#ffffff';
+    ctx.font = `bold ${Math.round(r * 0.35)}px monospace`;
+    ctx.textAlign = 'center';
+    ctx.textBaseline = 'middle';
+    ctx.fillText('SO', e.x, e.y - r * 0.1);
+    ctx.font = `${Math.round(r * 0.2)}px monospace`;
+    ctx.fillText('Stack', e.x, e.y + r * 0.25);
+    ctx.textBaseline = 'alphabetic';
+
+  } else if (e.type === 'blockchain') {
+    // The Blockchain: blue hexagonal shape
+    renderPolygon(e.x, e.y, r, 6, fill);
+    ctx.fillStyle = '#ffffff';
+    ctx.font = `bold ${Math.round(r * 0.3)}px monospace`;
+    ctx.textAlign = 'center';
+    ctx.textBaseline = 'middle';
+    ctx.fillText('⛓️', e.x, e.y - r * 0.1);
+    ctx.font = `${Math.round(r * 0.18)}px monospace`;
+    ctx.fillText('Blockchain', e.x, e.y + r * 0.35);
+    ctx.textBaseline = 'alphabetic';
+
+    // Immune shield visual
+    if (e.immune) {
+      const pulse = Math.sin(game.elapsed * 3) * 0.15 + 0.35;
+      ctx.globalAlpha = pulse;
+      ctx.strokeStyle = '#627eea';
+      ctx.lineWidth = 4;
+      ctx.beginPath();
+      ctx.arc(e.x, e.y, r + 10, 0, Math.PI * 2);
+      ctx.stroke();
+      // Inner glow
+      ctx.globalAlpha = pulse * 0.3;
+      ctx.fillStyle = '#627eea';
+      ctx.beginPath();
+      ctx.arc(e.x, e.y, r + 8, 0, Math.PI * 2);
+      ctx.fill();
+      ctx.globalAlpha = 1;
+    }
+  }
+
+  if (e.isClone) ctx.globalAlpha = 1;
+
+  // Enrage glow (all boss types)
+  if (def.enrageThreshold && e.hp / e.maxHp < def.enrageThreshold) {
+    ctx.globalAlpha = 0.3 + Math.sin(game.elapsed * 8) * 0.2;
+    ctx.strokeStyle = '#f85149';
+    ctx.lineWidth = 3;
+    ctx.beginPath();
+    ctx.arc(e.x, e.y, r + 6, 0, Math.PI * 2);
+    ctx.stroke();
+    ctx.globalAlpha = 1;
+  }
+}
+
+function drawRoundedRect(cx, cy, r, fill) {
+  ctx.fillStyle = fill;
   ctx.beginPath();
-  const rx = e.x - r;
-  const ry = e.y - r;
+  const rx = cx - r;
+  const ry = cy - r;
   const w = r * 2;
   const h = r * 2;
   const cr = 10;
@@ -510,27 +655,196 @@ function renderBoss(e, fill) {
   ctx.quadraticCurveTo(rx, ry, rx + cr, ry);
   ctx.closePath();
   ctx.fill();
+}
 
-  // XP text
-  ctx.fillStyle = '#ffffff';
-  ctx.font = `bold ${Math.round(r * 0.5)}px monospace`;
-  ctx.textAlign = 'center';
-  ctx.textBaseline = 'middle';
-  ctx.fillText('XP', e.x, e.y - r * 0.15);
-  ctx.font = `${Math.round(r * 0.25)}px monospace`;
-  ctx.fillText('Windows', e.x, e.y + r * 0.3);
-  ctx.textBaseline = 'alphabetic';
+// --- Stack Overflow: clone on hit ---
+function tryStackOverflowClone(boss) {
+  if (boss.type !== 'stackOverflow' || boss.isClone) return;
+  const def = CONFIG.BOSS_TYPES.stackOverflow;
+  if (bossState.cloneCount >= def.maxClones) return;
+  if (Math.random() > def.cloneChance) return;
 
-  // Enrage glow
-  if (e.hp / e.maxHp < CONFIG.BOSS.enrageThreshold) {
-    ctx.globalAlpha = 0.3 + Math.sin(game.elapsed * 8) * 0.2;
-    ctx.strokeStyle = '#f85149';
-    ctx.lineWidth = 3;
-    ctx.beginPath();
-    ctx.arc(e.x, e.y, r + 6, 0, Math.PI * 2);
-    ctx.stroke();
-    ctx.globalAlpha = 1;
+  bossState.cloneCount++;
+  const cloneHp = Math.round(boss.maxHp * def.cloneHpRatio);
+  const angle = Math.random() * Math.PI * 2;
+  const offset = 80;
+
+  const clone = {
+    x: boss.x + Math.cos(angle) * offset,
+    y: boss.y + Math.sin(angle) * offset,
+    radius: def.radius * 0.8,
+    speed: def.speed * 1.1,
+    hp: cloneHp,
+    maxHp: cloneHp,
+    damage: def.damage * 0.6,
+    xp: 10,
+    type: 'stackOverflow',
+    color: def.color,
+    dirX: 0, dirY: 0,
+    dirFrame: 0,
+    hitFlash: 0,
+    damaged: false,
+    isElite: false,
+    isBoss: true,
+    isClone: true,
+    immune: false,
+    slowTimer: 0, slowFactor: 1,
+    frozen: false, frozenTimer: 0,
+    regenRate: 0, spawnOnDeath: 0,
+    slowRadius: 0, slowFieldFactor: 1,
+  };
+
+  clone.x = Math.max(clone.radius, Math.min(CONFIG.MAP_WIDTH - clone.radius, clone.x));
+  clone.y = Math.max(clone.radius, Math.min(CONFIG.MAP_HEIGHT - clone.radius, clone.y));
+
+  enemies.push(clone);
+}
+
+// --- Blockchain: puzzle system ---
+const PUZZLE_SYMBOLS = ['🔑', '⛓️', '💎', '🪙', '📊', '🔐', '🧩', '⚡'];
+let puzzleSequence = [];
+let puzzlePlayerInput = [];
+let puzzlePhase = 'memorize'; // 'memorize' | 'input'
+let puzzleMemTimer = 0;
+
+function showBlockchainPuzzle(boss) {
+  bossState.puzzleActive = true;
+  game.state = GameState.PAUSED;
+
+  const def = CONFIG.BOSS_TYPES.blockchain;
+  const count = def.puzzleSymbolCount;
+
+  // Pick random symbols for the sequence
+  const shuffled = [...PUZZLE_SYMBOLS].sort(() => Math.random() - 0.5);
+  puzzleSequence = shuffled.slice(0, count);
+  puzzlePlayerInput = [];
+  puzzlePhase = 'memorize';
+  puzzleMemTimer = def.puzzleMemorizeTime;
+
+  const overlay = document.getElementById('puzzle-overlay');
+  const display = document.getElementById('puzzle-display');
+  const inputArea = document.getElementById('puzzle-input');
+  const inputLabel = document.getElementById('puzzle-input-label');
+  const instruction = document.getElementById('puzzle-instruction');
+  const timerEl = document.getElementById('puzzle-timer');
+  const resultEl = document.getElementById('puzzle-result');
+
+  resultEl.textContent = '';
+  instruction.textContent = 'Memorize the sequence!';
+  inputLabel.style.display = 'none';
+  inputArea.style.display = 'none';
+  timerEl.textContent = String(Math.ceil(puzzleMemTimer));
+
+  // Show symbols
+  display.innerHTML = '';
+  for (const sym of puzzleSequence) {
+    const el = document.createElement('div');
+    el.className = 'puzzle-symbol';
+    el.textContent = sym;
+    display.appendChild(el);
   }
+
+  overlay.classList.add('visible');
+
+  // Memorize countdown
+  const memInterval = setInterval(() => {
+    puzzleMemTimer -= 0.1;
+    timerEl.textContent = String(Math.max(0, Math.ceil(puzzleMemTimer)));
+    if (puzzleMemTimer <= 0) {
+      clearInterval(memInterval);
+      startPuzzleInput(boss);
+    }
+  }, 100);
+}
+
+function startPuzzleInput(boss) {
+  puzzlePhase = 'input';
+  puzzlePlayerInput = [];
+
+  const display = document.getElementById('puzzle-display');
+  const inputArea = document.getElementById('puzzle-input');
+  const inputLabel = document.getElementById('puzzle-input-label');
+  const instruction = document.getElementById('puzzle-instruction');
+  const timerEl = document.getElementById('puzzle-timer');
+
+  // Hide the shown symbols
+  display.innerHTML = '';
+  for (let i = 0; i < puzzleSequence.length; i++) {
+    const el = document.createElement('div');
+    el.className = 'puzzle-symbol hidden-symbol';
+    el.textContent = '?';
+    display.appendChild(el);
+  }
+
+  instruction.textContent = 'Select symbols in correct order:';
+  timerEl.textContent = '';
+
+  // Show all possible symbols to pick from (shuffled)
+  const options = [...PUZZLE_SYMBOLS].sort(() => Math.random() - 0.5);
+  inputLabel.style.display = 'block';
+  inputArea.style.display = 'flex';
+  inputArea.innerHTML = '';
+
+  for (const sym of options) {
+    const el = document.createElement('div');
+    el.className = 'puzzle-symbol';
+    el.textContent = sym;
+    el.addEventListener('click', () => handlePuzzleSymbolClick(sym, el, boss));
+    inputArea.appendChild(el);
+  }
+}
+
+function handlePuzzleSymbolClick(sym, el, boss) {
+  if (puzzlePhase !== 'input') return;
+
+  puzzlePlayerInput.push(sym);
+  el.classList.add('selected');
+  el.style.pointerEvents = 'none';
+
+  // Show progress in display area
+  const display = document.getElementById('puzzle-display');
+  const slots = display.querySelectorAll('.puzzle-symbol');
+  const idx = puzzlePlayerInput.length - 1;
+  if (slots[idx]) {
+    slots[idx].textContent = sym;
+    slots[idx].classList.remove('hidden-symbol');
+  }
+
+  if (puzzlePlayerInput.length >= puzzleSequence.length) {
+    // Check answer
+    const correct = puzzlePlayerInput.every((s, i) => s === puzzleSequence[i]);
+    resolvePuzzle(correct, boss);
+  }
+}
+
+function resolvePuzzle(correct, boss) {
+  puzzlePhase = 'done';
+  const resultEl = document.getElementById('puzzle-result');
+  const inputArea = document.getElementById('puzzle-input');
+
+  // Disable all buttons
+  inputArea.querySelectorAll('.puzzle-symbol').forEach(el => { el.style.pointerEvents = 'none'; });
+
+  if (correct) {
+    resultEl.textContent = '✅ Decrypted! Shield down for 5s!';
+    resultEl.style.color = '#3fb950';
+    const def = CONFIG.BOSS_TYPES.blockchain;
+    bossState.vulnerableTimer = def.vulnerableDuration;
+    boss.immune = false;
+    bossState.immune = false;
+  } else {
+    resultEl.textContent = '❌ Failed! Boss HP +50%!';
+    resultEl.style.color = '#f85149';
+    const def = CONFIG.BOSS_TYPES.blockchain;
+    boss.hp = Math.min(boss.hp * def.wrongPenaltyHpMult, boss.maxHp * 3);
+    boss.maxHp = Math.max(boss.maxHp, boss.hp);
+  }
+
+  setTimeout(() => {
+    document.getElementById('puzzle-overlay').classList.remove('visible');
+    bossState.puzzleActive = false;
+    game.state = GameState.PLAYING;
+  }, 1200);
 }
 
 function renderPolygon(x, y, radius, sides, fill) {
