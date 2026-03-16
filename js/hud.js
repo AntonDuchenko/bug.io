@@ -261,6 +261,7 @@ function restartGame() {
   projectiles.length = 0;
   xpGems.length = 0;
   damageNumbers.length = 0;
+  particles.length = 0;
 
   // Reset systems
   killCount = 0;

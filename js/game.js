@@ -243,21 +243,37 @@ function gameLoop(timestamp) {
     updateCollisions(dt);
     updateXpGems(dt);
     updateDamageNumbers(dt);
+    updateParticles(dt);
+    updateScreenShake(dt);
+    updateMovingBg(dt);
     if (typeof updateLocationMechanics === 'function') updateLocationMechanics(dt);
     checkVictory();
   }
 
   // Render
+  // Apply screen shake offset
+  const shake = getShakeOffset();
+  ctx.save();
+  ctx.translate(shake.x, shake.y);
+
   renderBackground();
+  renderMovingBgPattern();
   if (game.state !== GameState.MENU) {
     renderXpGems();
     renderEnemies();
     renderProjectiles();
+    renderParticles();
     renderSkills();
     renderPlayer();
     if (typeof renderLocationWorld === 'function') renderLocationWorld();
     renderDamageNumbers();
     if (typeof renderLocationPostProcess === 'function') renderLocationPostProcess();
+  }
+
+  ctx.restore(); // end shake offset
+
+  // HUD renders without shake
+  if (game.state !== GameState.MENU) {
     renderHUD();
     if (typeof renderLocationHUD === 'function') renderLocationHUD();
   }

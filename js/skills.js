@@ -247,6 +247,7 @@ const SKILL_DEFS = {
       if (healed > 0) {
         player.hp += healed;
         spawnDamageNumber(player.x, player.y - player.radius, '+' + healed, CONFIG.SKILL_HOT_RELOAD.color);
+        spawnHealParticles(player.x, player.y);
       }
       // Visual
       visualEffects.push({

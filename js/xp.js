@@ -80,6 +80,7 @@ function addXp(amount) {
     player.xp -= player.xpToNext;
     player.level++;
     player.xpToNext = xpToNextLevel(player.level);
+    spawnLevelUpParticles(player.x, player.y);
     // Route to location-specific level up screen if available
     if (typeof locationAwareLevelUp === 'function') {
       locationAwareLevelUp();

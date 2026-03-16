@@ -131,6 +131,7 @@ function updateCollisions(dt) {
           player.hp -= e.damage;
           playerIframeTimer = CONFIG.PLAYER_IFRAMES;
           playerHitFlash = 0.2;
+          triggerScreenShake(6, 0.15);
           spawnDamageNumber(player.x, player.y - player.radius, e.damage, CONFIG.HP_LOW);
           if (player.hp <= 0) {
             player.hp = 0;
@@ -180,6 +181,7 @@ function updateCollisions(dt) {
         e.hp -= dmg;
         e.hitFlash = 0.1;
         e.damaged = true;
+        spawnHitParticles(e.x, e.y, e.color);
         spawnDamageNumber(e.x, e.y - e.radius, Math.round(dmg));
         if (e.hp <= 0) {
           killCount++;
@@ -215,6 +217,7 @@ function removeDeadEnemies() {
       // Emit event for quest system
       if (typeof gameEvents !== 'undefined') gameEvents.emit('enemyKill', e);
       spawnXpGem(e.x, e.y, e.xp);
+      spawnEnemyDeathParticles(e.x, e.y, e.color);
       // Handle Virus death spawns
       if (typeof handleEnemyDeath === 'function') {
         handleEnemyDeath(e);
