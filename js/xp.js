@@ -435,12 +435,17 @@ function shuffle(arr) {
 // --- Level Up UI ---
 let levelUpActive = false;
 let levelUpChoices = [];
+let rerollsLeft = 0;
 
 function showLevelUpScreen() {
   levelUpActive = true;
   game.state = GameState.PAUSED;
   levelUpChoices = getRandomUpgrades(CONFIG.UPGRADE_CHOICES);
 
+  renderLevelUpCards();
+}
+
+function renderLevelUpCards() {
   const overlay = document.getElementById('levelup-overlay');
   const container = document.getElementById('levelup-cards');
   const levelText = document.getElementById('levelup-level');
@@ -470,7 +475,30 @@ function showLevelUpScreen() {
     container.appendChild(card);
   });
 
+  // Reroll button
+  const rerollBtn = document.getElementById('levelup-reroll');
+  if (rerollBtn) {
+    if (rerollsLeft > 0) {
+      rerollBtn.style.display = '';
+      rerollBtn.textContent = `Reroll (${rerollsLeft}) [R]`;
+      rerollBtn.disabled = false;
+      rerollBtn.style.opacity = '1';
+    } else {
+      rerollBtn.style.display = '';
+      rerollBtn.textContent = 'No rerolls';
+      rerollBtn.disabled = true;
+      rerollBtn.style.opacity = '0.3';
+    }
+  }
+
   overlay.classList.add('visible');
+}
+
+function rerollUpgrades() {
+  if (!levelUpActive || rerollsLeft <= 0) return;
+  rerollsLeft--;
+  levelUpChoices = getRandomUpgrades(CONFIG.UPGRADE_CHOICES);
+  renderLevelUpCards();
 }
 
 function selectUpgrade(idx) {
@@ -488,9 +516,13 @@ function selectUpgrade(idx) {
   game.state = GameState.PLAYING;
 }
 
-// Key listener for 1/2/3
+// Key listener for 1/2/3 and R
 window.addEventListener('keydown', (e) => {
   if (!levelUpActive) return;
+  if (e.code === 'KeyR') {
+    rerollUpgrades();
+    return;
+  }
   const num = parseInt(e.key);
   if (num >= 1 && num <= levelUpChoices.length) {
     selectUpgrade(num - 1);

@@ -49,6 +49,7 @@ function getDefaultSave() {
     victories: 0,
     maxSurviveMinutes: 0,
     evolutionsUsed: 0,
+    rerollLevel: 0,
   };
 }
 
@@ -242,6 +243,23 @@ function renderMetaContent() {
   }
   html += '</div>';
 
+  // Upgrades section (Rerolls)
+  html += '<h3 class="meta-section-title">Upgrades</h3><div class="meta-cards">';
+  const rlvl = saveData.rerollLevel || 0;
+  const maxRlvl = CONFIG.REROLL_MAX_LEVEL;
+  const isMaxed = rlvl >= maxRlvl;
+  const nextCost = !isMaxed ? CONFIG.REROLL_COSTS[rlvl] : 0;
+  html += `<div class="meta-card ${rlvl > 0 ? 'unlocked' : 'locked'}">
+    <div class="meta-card-emoji">🎲</div>
+    <div class="meta-card-name">Rerolls</div>
+    <div class="meta-card-desc">${rlvl} reroll${rlvl !== 1 ? 's' : ''} per game</div>
+    ${isMaxed
+      ? '<div class="meta-card-status">MAX</div>'
+      : `<button class="meta-unlock-btn" onclick="tryUpgradeReroll()">${nextCost} Commits → ${rlvl + 1} rerolls</button>`
+    }
+  </div>`;
+  html += '</div>';
+
   container.innerHTML = html;
 }
 
@@ -269,6 +287,28 @@ function tryUnlock(type, id, cost) {
       }
     }, 50);
   }
+}
+
+function tryUpgradeReroll() {
+  if (!saveData) loadProgress();
+  const lvl = saveData.rerollLevel || 0;
+  if (lvl >= CONFIG.REROLL_MAX_LEVEL) return;
+  const cost = CONFIG.REROLL_COSTS[lvl];
+  if (saveData.commits < cost) {
+    const el = document.getElementById('meta-commits');
+    el.style.color = '#f85149';
+    setTimeout(() => { el.style.color = ''; }, 400);
+    return;
+  }
+  saveData.commits -= cost;
+  saveData.rerollLevel = lvl + 1;
+  saveProgress();
+  renderMetaContent();
+}
+
+function getRerollsPerGame() {
+  if (!saveData) loadProgress();
+  return saveData.rerollLevel || 0;
 }
 
 // --- Track bosses killed this run ---
@@ -495,6 +535,9 @@ function startGameWithHero(heroId) {
   addSkill(hero.startSkill);
   for (const key in upgradeLevels) delete upgradeLevels[key];
   upgradeLevels[hero.startSkill] = 1;
+
+  // Init rerolls for this run
+  rerollsLeft = getRerollsPerGame();
 
   // Initialize location mechanics
   if (typeof initLocation === 'function') {

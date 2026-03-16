@@ -247,6 +247,10 @@ const CONFIG = {
   PASSIVE_SPEED_PER_LEVEL: 0.1,   // +10% per level
   PASSIVE_MAGNET_PER_LEVEL: 0.25, // +25% per level
 
+  // Rerolls
+  REROLL_MAX_LEVEL: 7,
+  REROLL_COSTS: [15, 25, 40, 55, 75, 100, 130],  // cost per upgrade level in meta shop
+
   // Meta progression
   COMMITS_PER_BOSS: 5,
   UNLOCK_COSTS: {

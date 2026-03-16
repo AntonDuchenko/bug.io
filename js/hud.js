@@ -267,6 +267,7 @@ function restartGame() {
   // Reset systems
   killCount = 0;
   bossesKilledThisRun = 0;
+  rerollsLeft = typeof getRerollsPerGame === 'function' ? getRerollsPerGame() : 0;
   for (const key in killsByType) delete killsByType[key];
   playerIframeTimer = 0;
   playerHitFlash = 0;
