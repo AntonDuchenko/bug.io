@@ -493,3 +493,132 @@ upgradeLevels['console_log'] = 1;
 
 // Base magnet radius (before upgrades)
 const BASE_MAGNET_RADIUS = CONFIG.PLAYER_MAGNET_RADIUS;
+
+// ============================================================
+// Boss Loot Chests
+// ============================================================
+
+const lootChests = [];
+
+function spawnLootChest(x, y) {
+  lootChests.push({
+    x, y,
+    radius: 14,
+    bobTimer: 0,
+    attracted: false,
+  });
+  // Golden burst particles
+  spawnParticles(x, y, 16, 100, 0.8, '#e3b341', 4);
+}
+
+function updateLootChests(dt) {
+  for (let i = lootChests.length - 1; i >= 0; i--) {
+    const c = lootChests[i];
+    c.bobTimer += dt;
+
+    // Attract when close
+    const dx = player.x - c.x;
+    const dy = player.y - c.y;
+    const distSq = dx * dx + dy * dy;
+    const attractR = 80;
+
+    if (distSq < attractR * attractR) {
+      c.attracted = true;
+    }
+
+    if (c.attracted) {
+      const dist = Math.sqrt(distSq);
+      if (dist < player.radius + c.radius) {
+        collectLootChest();
+        lootChests.splice(i, 1);
+        continue;
+      }
+      const speed = 200;
+      c.x += (dx / dist) * speed * dt;
+      c.y += (dy / dist) * speed * dt;
+    }
+  }
+}
+
+function collectLootChest() {
+  // Try to upgrade a random active skill that isn't maxed
+  const upgradeable = [];
+  for (const id in activeSkills) {
+    const skill = activeSkills[id];
+    const def = SKILL_DEFS[id];
+    if (def && skill.level < def.maxLevel) {
+      upgradeable.push(id);
+    }
+  }
+
+  if (upgradeable.length > 0) {
+    const pick = upgradeable[Math.floor(Math.random() * upgradeable.length)];
+    applyUpgrade(pick);
+    const def = SKILL_DEFS[pick];
+    const name = def ? def.name : pick;
+    spawnDamageNumber(player.x, player.y - 30, name + ' UP!', '#e3b341');
+  } else {
+    // All skills maxed — give a random passive
+    const passives = ['max_hp', 'move_speed', 'magnet'];
+    const pick = passives[Math.floor(Math.random() * passives.length)];
+    applyUpgrade(pick);
+    spawnDamageNumber(player.x, player.y - 30, 'BONUS!', '#e3b341');
+  }
+
+  // Celebration particles
+  spawnLevelUpParticles(player.x, player.y);
+  spawnParticles(player.x, player.y, 12, 80, 0.6, '#e3b341', 3);
+}
+
+function renderLootChests() {
+  ctx.save();
+  ctx.translate(-camera.x, -camera.y);
+
+  for (const c of lootChests) {
+    const bob = Math.sin(c.bobTimer * 3) * 3;
+    const cx = c.x;
+    const cy = c.y + bob;
+
+    // Glow
+    ctx.globalAlpha = 0.2 + Math.sin(c.bobTimer * 4) * 0.1;
+    ctx.fillStyle = '#e3b341';
+    ctx.beginPath();
+    ctx.arc(cx, cy, c.radius + 6, 0, Math.PI * 2);
+    ctx.fill();
+
+    // Chest body
+    ctx.globalAlpha = 1;
+    const r = c.radius;
+
+    // Bottom box
+    ctx.fillStyle = '#b8860b';
+    ctx.fillRect(cx - r, cy - r * 0.3, r * 2, r * 1.3);
+
+    // Lid
+    ctx.fillStyle = '#e3b341';
+    ctx.beginPath();
+    ctx.moveTo(cx - r, cy - r * 0.3);
+    ctx.lineTo(cx - r * 1.1, cy - r * 0.8);
+    ctx.lineTo(cx + r * 1.1, cy - r * 0.8);
+    ctx.lineTo(cx + r, cy - r * 0.3);
+    ctx.closePath();
+    ctx.fill();
+
+    // Lock
+    ctx.fillStyle = '#ffffff';
+    ctx.beginPath();
+    ctx.arc(cx, cy + r * 0.15, r * 0.2, 0, Math.PI * 2);
+    ctx.fill();
+
+    // Star sparkle
+    ctx.fillStyle = '#fffbe6';
+    ctx.globalAlpha = 0.6 + Math.sin(c.bobTimer * 6) * 0.4;
+    ctx.font = `${Math.round(r * 0.8)}px monospace`;
+    ctx.textAlign = 'center';
+    ctx.textBaseline = 'middle';
+    ctx.fillText('★', cx, cy - r * 1.2);
+    ctx.globalAlpha = 1;
+  }
+
+  ctx.restore();
+}

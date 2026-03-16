@@ -262,6 +262,7 @@ function restartGame() {
   xpGems.length = 0;
   damageNumbers.length = 0;
   particles.length = 0;
+  lootChests.length = 0;
 
   // Reset systems
   killCount = 0;

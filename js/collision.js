@@ -234,6 +234,8 @@ function removeDeadEnemies() {
           bossState.immune = false;
           if (typeof bossesKilledThisRun !== 'undefined') bossesKilledThisRun++;
           if (typeof gameEvents !== 'undefined') gameEvents.emit('bossKill', e);
+          // Drop loot chest
+          spawnLootChest(e.x, e.y);
           const bossBar = document.getElementById('boss-hp-bar');
           if (bossBar) bossBar.classList.remove('visible');
         }

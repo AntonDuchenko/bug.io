@@ -338,6 +338,7 @@ function gameLoop(timestamp) {
     updateProjectiles(dt);
     updateCollisions(dt);
     updateXpGems(dt);
+    updateLootChests(dt);
     updateDamageNumbers(dt);
     updateParticles(dt);
     updateScreenShake(dt);
@@ -356,6 +357,7 @@ function gameLoop(timestamp) {
   renderMovingBgPattern();
   if (game.state !== GameState.MENU) {
     renderXpGems();
+    renderLootChests();
     renderEnemies();
     renderProjectiles();
     renderParticles();
