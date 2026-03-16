@@ -8,8 +8,8 @@ const eliteTypeKeys = ['legacyCode', 'virus', 'deprecatedPkg'];
 
 const spawner = {
   timer: 0,
-  baseRate: 1.5,
-  perSpawn: 2,
+  baseRate: CONFIG.SPAWN_BASE_RATE,
+  perSpawn: CONFIG.SPAWN_PER_WAVE,
   waveNumber: 0,
   unlockedTypes: 1,
   eliteTimer: 0,

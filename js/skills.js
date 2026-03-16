@@ -31,13 +31,14 @@ const SKILL_DEFS = {
     maxLevel: 5,
     getParams(lvl) {
       const b = CONFIG.SKILL_CONSOLE_LOG;
+      const s = CONFIG.SKILL_SCALING.console_log;
       return {
         directions: b.directions + (lvl - 1),
-        damage: b.damage + (lvl - 1) * 5,
-        cooldown: b.cooldown - (lvl - 1) * 0.1,
+        damage: b.damage + (lvl - 1) * s.dmgPerLvl,
+        cooldown: b.cooldown - (lvl - 1) * s.cdPerLvl,
         speed: b.speed,
         radius: b.radius,
-        maxDistance: b.maxDistance + (lvl - 1) * 20,
+        maxDistance: b.maxDistance + (lvl - 1) * s.distPerLvl,
       };
     },
     getDescription(lvl) {
@@ -85,10 +86,11 @@ const SKILL_DEFS = {
     maxLevel: 5,
     getParams(lvl) {
       const b = CONFIG.SKILL_GIT_PUSH;
+      const s = CONFIG.SKILL_SCALING.git_push;
       return {
         count: lvl >= 3 ? 2 : 1,
-        damage: b.damage + (lvl - 1) * 10,
-        cooldown: b.cooldown - (lvl - 1) * 0.15,
+        damage: b.damage + (lvl - 1) * s.dmgPerLvl,
+        cooldown: b.cooldown - (lvl - 1) * s.cdPerLvl,
         speed: b.speed,
         radius: b.radius,
         maxDistance: b.maxDistance,
@@ -139,10 +141,11 @@ const SKILL_DEFS = {
     maxLevel: 5,
     getParams(lvl) {
       const b = CONFIG.SKILL_NPM_INSTALL;
+      const s = CONFIG.SKILL_SCALING.npm_install;
       return {
-        damage: b.damage + (lvl - 1) * 10,
-        cooldown: b.cooldown - (lvl - 1) * 0.3,
-        radius: lvl >= 3 ? Math.round(b.radius * 1.3) : b.radius,
+        damage: b.damage + (lvl - 1) * s.dmgPerLvl,
+        cooldown: b.cooldown - (lvl - 1) * s.cdPerLvl,
+        radius: lvl >= 3 ? Math.round(b.radius * s.radiusMultLv3) : b.radius,
         slow: lvl >= 5,
       };
     },
@@ -188,11 +191,12 @@ const SKILL_DEFS = {
     maxLevel: 5,
     getParams(lvl) {
       const b = CONFIG.SKILL_STACK_TRACE;
+      const s = CONFIG.SKILL_SCALING.stack_trace;
       return {
-        targets: lvl >= 3 ? 2 : 1,
-        dps: lvl >= 5 ? b.dps * 2 + (lvl - 1) * 15 : b.dps + (lvl - 1) * 15,
-        cooldown: b.cooldown - (lvl - 1) * 0.2,
-        duration: b.duration + (lvl - 1) * 0.1,
+        targets: lvl >= 3 ? s.targetsLv3 : 1,
+        dps: lvl >= 5 ? b.dps * s.dpsMultLv5 + (lvl - 1) * s.dpsPerLvl : b.dps + (lvl - 1) * s.dpsPerLvl,
+        cooldown: b.cooldown - (lvl - 1) * s.cdPerLvl,
+        duration: b.duration + (lvl - 1) * s.durPerLvl,
         range: b.range,
       };
     },
@@ -229,9 +233,10 @@ const SKILL_DEFS = {
     maxLevel: 5,
     getParams(lvl) {
       const b = CONFIG.SKILL_HOT_RELOAD;
+      const s = CONFIG.SKILL_SCALING.hot_reload;
       return {
-        heal: b.healAmount + (lvl - 1) * 5,
-        cooldown: lvl >= 3 ? b.cooldown * 0.7 : b.cooldown,
+        heal: b.healAmount + (lvl - 1) * s.healPerLvl,
+        cooldown: lvl >= 3 ? b.cooldown * s.cdMultLv3 : b.cooldown,
         shield: lvl >= 5,
       };
     },
@@ -272,10 +277,11 @@ const SKILL_DEFS = {
     maxLevel: 5,
     getParams(lvl) {
       const b = CONFIG.SKILL_404;
+      const s = CONFIG.SKILL_SCALING['404'];
       return {
-        targets: lvl >= 3 ? 3 : 1,
-        damage: b.damage + (lvl - 1) * 5,
-        cooldown: b.cooldown - (lvl - 1) * 0.4,
+        targets: lvl >= 3 ? s.targetsLv3 : 1,
+        damage: b.damage + (lvl - 1) * s.dmgPerLvl,
+        cooldown: b.cooldown - (lvl - 1) * s.cdPerLvl,
         range: b.range,
       };
     },
@@ -326,11 +332,12 @@ const SKILL_DEFS = {
     maxLevel: 5,
     getParams(lvl) {
       const b = CONFIG.SKILL_SQL_QUERY;
+      const s = CONFIG.SKILL_SCALING.sql_query;
       return {
-        damage: b.damage + (lvl - 1) * 8,
-        cooldown: b.cooldown - (lvl - 1) * 0.15,
-        width: b.width + (lvl - 1) * 10,
-        length: b.length + (lvl - 1) * 20,
+        damage: b.damage + (lvl - 1) * s.dmgPerLvl,
+        cooldown: b.cooldown - (lvl - 1) * s.cdPerLvl,
+        width: b.width + (lvl - 1) * s.widthPerLvl,
+        length: b.length + (lvl - 1) * s.lenPerLvl,
       };
     },
     getDescription(lvl) {
@@ -406,9 +413,10 @@ const SKILL_DEFS = {
     maxLevel: 5,
     getParams(lvl) {
       const b = CONFIG.SKILL_EXPLOIT;
+      const s = CONFIG.SKILL_SCALING.exploit;
       return {
-        damage: b.damage + (lvl - 1) * 8,
-        cooldown: b.cooldown - (lvl - 1) * 0.1,
+        damage: b.damage + (lvl - 1) * s.dmgPerLvl,
+        cooldown: b.cooldown - (lvl - 1) * s.cdPerLvl,
       };
     },
     getDescription(lvl) {

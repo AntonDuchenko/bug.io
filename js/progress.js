@@ -149,7 +149,7 @@ function resetProgress() {
 // --- Commits earned from a run ---
 function calculateCommits(elapsedSeconds, bossesKilledThisRun) {
   const minutes = Math.floor(elapsedSeconds / 60);
-  return minutes + (bossesKilledThisRun || 0) * 5;
+  return minutes + (bossesKilledThisRun || 0) * CONFIG.COMMITS_PER_BOSS;
 }
 
 // --- Meta Menu UI ---

@@ -16,7 +16,7 @@ function spawnXpGem(x, y, value) {
 
 function updateXpGems(dt) {
   const magnetLevel = getUpgradeLevel('magnet');
-  const magnetR = BASE_MAGNET_RADIUS * (1 + magnetLevel * 0.25);
+  const magnetR = BASE_MAGNET_RADIUS * (1 + magnetLevel * CONFIG.PASSIVE_MAGNET_PER_LEVEL);
   const magnetRSq = magnetR * magnetR;
 
   for (let i = xpGems.length - 1; i >= 0; i--) {
@@ -315,11 +315,11 @@ function applyUpgrade(id) {
 
   switch (id) {
     case 'max_hp':
-      player.maxHp += 20;
-      player.hp += 20;
+      player.maxHp += CONFIG.PASSIVE_HP_PER_LEVEL;
+      player.hp += CONFIG.PASSIVE_HP_PER_LEVEL;
       break;
     case 'move_speed':
-      player.speed = CONFIG.PLAYER_SPEED * (1 + upgradeLevels[id] * 0.1);
+      player.speed = CONFIG.PLAYER_SPEED * (1 + upgradeLevels[id] * CONFIG.PASSIVE_SPEED_PER_LEVEL);
       break;
     case 'magnet':
       break;

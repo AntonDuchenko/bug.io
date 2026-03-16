@@ -114,7 +114,7 @@ function updateCollisions(dt) {
     if (e._contactCd > 0) { e._contactCd -= dt; continue; }
     if (circleCollide(player, e)) {
       // Damage player (respect iframes and container immunity)
-      if (playerIframeTimer <= 0 && !player._containerImmune) {
+      if (playerIframeTimer <= 0 && !player._containerImmune && !(typeof debug !== 'undefined' && debug.godMode)) {
         // Knockback enemy only when dealing damage
         const dx = e.x - player.x;
         const dy = e.y - player.y;

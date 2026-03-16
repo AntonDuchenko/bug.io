@@ -20,8 +20,8 @@ const CONFIG = {
   // Enemies
   MAX_ENEMIES: 300,
   SPAWN_MARGIN: 100,          // spawn distance beyond screen edge
-  WAVE_INTERVAL: 30,          // seconds between difficulty bumps
-  WAVE_SCALE: 0.1,            // +10% enemies per wave
+  WAVE_INTERVAL: 25,          // seconds between difficulty bumps
+  WAVE_SCALE: 0.12,           // +12% enemies per wave
   NEW_TYPE_INTERVAL: 60,      // seconds before next enemy type unlocks
   ENEMY_AI_INTERVAL: 10,      // recalculate direction every N frames
   KNOCKBACK_DIST: 50,
@@ -149,7 +149,7 @@ const CONFIG = {
     deprecatedPkg:  { hp: 100, speed: 50,  damage: 5,  radius: 20, xp: 10, color: '#8b949e', shape: 'pentagon', slowRadius: 80, slowFactor: 0.5 },
   },
   ELITE_UNLOCK_TIME: 180,
-  ELITE_SPAWN_INTERVAL: 15,
+  ELITE_SPAWN_INTERVAL: 12,
 
   BOSS: {
     spawnInterval: 300,
@@ -223,6 +223,35 @@ const CONFIG = {
     node_modules: { skill: 'npm_install',  passive: 'package_json', name: 'node_modules', emoji: '📁', color: '#f0883e', radiusMult: 3, freezeTime: 0.5 },
     strict_mode:  { skill: 'stack_trace',  passive: 'typescript',   name: 'Strict Mode',  emoji: '🔒', color: '#3178c6', eliteDmgMult: 2 },
     container:    { skill: 'hot_reload',   passive: 'dockerfile',   name: 'Container',    emoji: '📦', color: '#0db7ed', immuneDuration: 5, immuneCooldown: 60 },
+  },
+
+  // Spawner
+  SPAWN_BASE_RATE: 1.5,         // seconds between spawns
+  SPAWN_PER_WAVE: 2,            // enemies per spawn event
+
+  // Skill level scaling (per level above 1)
+  SKILL_SCALING: {
+    console_log:  { dmgPerLvl: 5,  cdPerLvl: 0.1,  distPerLvl: 20 },
+    git_push:     { dmgPerLvl: 10, cdPerLvl: 0.15 },
+    npm_install:  { dmgPerLvl: 10, cdPerLvl: 0.3,  radiusMultLv3: 1.3 },
+    stack_trace:  { dpsPerLvl: 15, cdPerLvl: 0.2,  durPerLvl: 0.1, dpsMultLv5: 2, targetsLv3: 2 },
+    hot_reload:   { healPerLvl: 5, cdMultLv3: 0.7 },
+    '404':        { dmgPerLvl: 5,  cdPerLvl: 0.4,  targetsLv3: 3 },
+    sql_query:    { dmgPerLvl: 8,  cdPerLvl: 0.15, widthPerLvl: 10, lenPerLvl: 20 },
+    exploit:      { dmgPerLvl: 8,  cdPerLvl: 0.1 },
+  },
+
+  // Upgrade passives
+  PASSIVE_HP_PER_LEVEL: 20,
+  PASSIVE_SPEED_PER_LEVEL: 0.1,   // +10% per level
+  PASSIVE_MAGNET_PER_LEVEL: 0.25, // +25% per level
+
+  // Meta progression
+  COMMITS_PER_BOSS: 5,
+  UNLOCK_COSTS: {
+    heroes:     { backend_dev: 50, devops: 100, hacker: 200 },
+    locations:  { staging: 30, legacy_codebase: 30, dark_mode: 50, cloud: 50, incident: 80, hackathon: 80, infinite_loop: 100, production_server: 150 },
+    evolutions: { breakpoint: 40, auto_deploy: 40, node_modules: 40, strict_mode: 40, container: 40 },
   },
 
   // Collision spatial grid

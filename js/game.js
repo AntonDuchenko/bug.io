@@ -33,11 +33,45 @@ function resizeCanvas() {
 window.addEventListener('resize', resizeCanvas);
 resizeCanvas();
 
+// --- Debug Mode ---
+const debug = {
+  enabled: false,
+  godMode: false,
+};
+
 // --- Input ---
 const keys = new Set();
 
 window.addEventListener('keydown', (e) => {
   keys.add(e.code);
+
+  // Alt+D toggles debug mode
+  if (e.altKey && e.code === 'KeyD') {
+    debug.enabled = !debug.enabled;
+    e.preventDefault();
+    return;
+  }
+
+  // Debug: G = god mode, K = kill all enemies, L = level up, T = add 10s
+  if (debug.enabled && game.state === GameState.PLAYING) {
+    if (e.code === 'KeyG') {
+      debug.godMode = !debug.godMode;
+      if (debug.godMode) { player.hp = player.maxHp; }
+      return;
+    }
+    if (e.code === 'KeyK') {
+      for (const en of enemies) en.hp = 0;
+      return;
+    }
+    if (e.code === 'KeyL') {
+      addXp(player.xpToNext - player.xp);
+      return;
+    }
+    if (e.code === 'KeyT') {
+      game.elapsed += 10;
+      return;
+    }
+  }
 
   if (e.code === 'Escape') {
     if (typeof levelUpActive !== 'undefined' && levelUpActive) return;
@@ -198,6 +232,68 @@ function renderPlayer() {
   ctx.restore();
 }
 
+// --- Debug Rendering ---
+function renderDebug() {
+  if (!debug.enabled) return;
+
+  // Collision circles (world space)
+  ctx.save();
+  ctx.translate(-camera.x, -camera.y);
+  ctx.lineWidth = 1;
+
+  // Player collision circle
+  ctx.strokeStyle = '#00ff00';
+  ctx.beginPath();
+  ctx.arc(player.x, player.y, player.radius, 0, Math.PI * 2);
+  ctx.stroke();
+
+  // Magnet radius
+  const magnetLevel = typeof getUpgradeLevel === 'function' ? getUpgradeLevel('magnet') : 0;
+  const magnetR = CONFIG.PLAYER_MAGNET_RADIUS * (1 + magnetLevel * CONFIG.PASSIVE_MAGNET_PER_LEVEL);
+  ctx.strokeStyle = 'rgba(126, 231, 135, 0.3)';
+  ctx.beginPath();
+  ctx.arc(player.x, player.y, magnetR, 0, Math.PI * 2);
+  ctx.stroke();
+
+  // Enemy collision circles
+  for (const e of enemies) {
+    if (e.x + e.radius < camera.x - 20 || e.x - e.radius > camera.x + canvasWidth + 20 ||
+        e.y + e.radius < camera.y - 20 || e.y - e.radius > camera.y + canvasHeight + 20) continue;
+    ctx.strokeStyle = e.hp > 0 ? '#ff4444' : '#444444';
+    ctx.beginPath();
+    ctx.arc(e.x, e.y, e.radius, 0, Math.PI * 2);
+    ctx.stroke();
+  }
+
+  // Projectile collision circles
+  ctx.strokeStyle = '#ffff00';
+  for (const p of projectiles) {
+    ctx.beginPath();
+    ctx.arc(p.x, p.y, p.radius, 0, Math.PI * 2);
+    ctx.stroke();
+  }
+
+  ctx.restore();
+
+  // Debug HUD (screen space)
+  ctx.save();
+  ctx.font = '11px monospace';
+  ctx.fillStyle = '#00ff00';
+  ctx.textAlign = 'left';
+  const lines = [
+    'DEBUG MODE (Alt+D to toggle)',
+    `God: ${debug.godMode ? 'ON' : 'OFF'} [G]  Kill All [K]  Level Up [L]  +10s [T]`,
+    `Enemies: ${enemies.length}  Projectiles: ${projectiles.length}  Particles: ${particles.length}`,
+    `Player: (${Math.round(player.x)}, ${Math.round(player.y)})  HP: ${Math.round(player.hp)}/${player.maxHp}`,
+    `Elapsed: ${Math.round(game.elapsed)}s  Wave: ${spawner.waveNumber}  FPS: ${game.fps}`,
+    `Level: ${player.level}  XP: ${player.xp}/${player.xpToNext}  Kills: ${killCount}`,
+  ];
+  for (let i = 0; i < lines.length; i++) {
+    ctx.fillText(lines[i], 10, canvasHeight - 10 - (lines.length - 1 - i) * 14);
+  }
+  ctx.restore();
+}
+
 // --- Game object ---
 const game = {
   state: GameState.MENU,
@@ -276,6 +372,7 @@ function gameLoop(timestamp) {
   if (game.state !== GameState.MENU) {
     renderHUD();
     if (typeof renderLocationHUD === 'function') renderLocationHUD();
+    renderDebug();
   }
 }
 
