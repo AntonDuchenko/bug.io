@@ -199,6 +199,8 @@ function renderBackground() {
   ctx.restore();
 }
 
+let playerAnimTimer = 0;
+
 function renderPlayer() {
   ctx.save();
   ctx.translate(-camera.x, -camera.y);
@@ -206,29 +208,27 @@ function renderPlayer() {
   const px = player.x;
   const py = player.y;
 
-  ctx.fillStyle = playerHitFlash > 0 ? CONFIG.PLAYER_HIT : CONFIG.PLAYER;
-
   if (playerIframeTimer > 0 && Math.floor(playerIframeTimer * 10) % 2 === 0) {
     ctx.globalAlpha = 0.4;
   }
 
-  ctx.beginPath();
-  ctx.arc(px, py, player.radius, 0, Math.PI * 2);
-  ctx.fill();
+  // Hit flash tint
+  if (playerHitFlash > 0) {
+    ctx.globalAlpha = Math.max(ctx.globalAlpha || 1, 0.4);
+  }
+
+  const animState = getPlayerAnimState();
+  const flipX = player.dirX < 0;
+
+  if (!drawAnimatedSprite('player', px, py, player.radius, animState, playerAnimTimer, flipX)) {
+    // Fallback: old circle
+    ctx.fillStyle = playerHitFlash > 0 ? CONFIG.PLAYER_HIT : CONFIG.PLAYER;
+    ctx.beginPath();
+    ctx.arc(px, py, player.radius, 0, Math.PI * 2);
+    ctx.fill();
+  }
 
   ctx.globalAlpha = 1;
-
-  // Direction arrow
-  const arrowLen = player.radius + 8;
-  const ax = px + player.dirX * arrowLen;
-  const ay = py + player.dirY * arrowLen;
-  ctx.strokeStyle = CONFIG.PLAYER_DIR;
-  ctx.lineWidth = 2;
-  ctx.beginPath();
-  ctx.moveTo(px, py);
-  ctx.lineTo(ax, ay);
-  ctx.stroke();
-
   ctx.restore();
 }
 
@@ -331,6 +331,7 @@ function gameLoop(timestamp) {
   if (game.state === GameState.PLAYING) {
     game.elapsed += dt;
     updatePlayer(dt);
+    playerAnimTimer += dt;
     updateCamera(dt);
     updateSpawner(dt);
     updateEnemies(dt);

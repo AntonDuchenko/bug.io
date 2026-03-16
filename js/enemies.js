@@ -64,6 +64,7 @@ function spawnEnemy(type, isElite) {
     damaged: false,
     isElite: !!isElite,
     isBoss: false,
+    _animTimer: Math.random() * 2,
     // Slow/freeze
     slowTimer: 0,
     slowFactor: 1,
@@ -111,6 +112,7 @@ function spawnBoss() {
     damaged: false,
     isElite: false,
     isBoss: true,
+    _animTimer: 0,
     slowTimer: 0, slowFactor: 1,
     frozen: false, frozenTimer: 0,
     regenRate: 0, spawnOnDeath: 0,
@@ -402,6 +404,7 @@ function updateEnemies(dt) {
     e.y = Math.max(e.radius, Math.min(CONFIG.MAP_HEIGHT - e.radius, e.y));
 
     if (e.hitFlash > 0) e.hitFlash -= dt;
+    e._animTimer += dt;
   }
 }
 
@@ -416,67 +419,133 @@ function renderEnemies() {
         e.y + e.radius < camera.y - 20 || e.y - e.radius > camera.y + canvasHeight + 20) continue;
 
     const fill = e.hitFlash > 0 ? CONFIG.ENEMY_HIT : (e.frozen ? '#88ccff' : e.color);
+    const animState = getEnemyAnimState(e);
+    const flipX = e.dirX < 0;
 
-    // Draw based on shape
-    if (e.isBoss) {
-      renderBoss(e, fill);
-    } else if (e.shape === 'circle') {
-      ctx.fillStyle = fill;
+    // Frozen/hit tint overlay
+    if (e.frozen) ctx.globalAlpha = 0.7;
+
+    // Try sprite first
+    const spriteKey = e.isBoss ? e.type : e.type;
+    const spriteDrawn = drawAnimatedSprite(spriteKey, e.x, e.y, e.radius, animState, e._animTimer, flipX);
+
+    // Hit flash overlay on sprite
+    if (spriteDrawn && e.hitFlash > 0) {
+      ctx.globalAlpha = 0.4;
+      ctx.fillStyle = '#ffffff';
       ctx.beginPath();
       ctx.arc(e.x, e.y, e.radius, 0, Math.PI * 2);
       ctx.fill();
-    } else if (e.shape === 'square') {
-      ctx.fillStyle = fill;
-      ctx.fillRect(e.x - e.radius, e.y - e.radius, e.radius * 2, e.radius * 2);
-    } else if (e.shape === 'triangle') {
-      ctx.fillStyle = fill;
+      ctx.globalAlpha = 1;
+    }
+
+    // Frozen tint overlay on sprite
+    if (spriteDrawn && e.frozen) {
+      ctx.globalAlpha = 0.3;
+      ctx.fillStyle = '#88ccff';
       ctx.beginPath();
-      ctx.moveTo(e.x, e.y - e.radius);
-      ctx.lineTo(e.x - e.radius, e.y + e.radius);
-      ctx.lineTo(e.x + e.radius, e.y + e.radius);
-      ctx.closePath();
+      ctx.arc(e.x, e.y, e.radius, 0, Math.PI * 2);
       ctx.fill();
-    } else if (e.shape === 'hexagon') {
-      renderPolygon(e.x, e.y, e.radius, 6, fill);
-      // Regen particles
-      if (e.regenRate > 0 && Math.random() < 0.1) {
-        ctx.globalAlpha = 0.5;
-        ctx.fillStyle = '#3fb950';
+      ctx.globalAlpha = 1;
+    }
+
+    // Fallback to old shapes if sprite not loaded
+    if (!spriteDrawn) {
+      if (e.isBoss) {
+        renderBoss(e, fill);
+      } else if (e.shape === 'circle') {
+        ctx.fillStyle = fill;
         ctx.beginPath();
-        ctx.arc(
-          e.x + (Math.random() - 0.5) * e.radius * 2,
-          e.y + (Math.random() - 0.5) * e.radius * 2,
-          2, 0, Math.PI * 2
-        );
+        ctx.arc(e.x, e.y, e.radius, 0, Math.PI * 2);
         ctx.fill();
-        ctx.globalAlpha = 1;
+      } else if (e.shape === 'square') {
+        ctx.fillStyle = fill;
+        ctx.fillRect(e.x - e.radius, e.y - e.radius, e.radius * 2, e.radius * 2);
+      } else if (e.shape === 'triangle') {
+        ctx.fillStyle = fill;
+        ctx.beginPath();
+        ctx.moveTo(e.x, e.y - e.radius);
+        ctx.lineTo(e.x - e.radius, e.y + e.radius);
+        ctx.lineTo(e.x + e.radius, e.y + e.radius);
+        ctx.closePath();
+        ctx.fill();
+      } else if (e.shape === 'hexagon') {
+        renderPolygon(e.x, e.y, e.radius, 6, fill);
+      } else if (e.shape === 'diamond') {
+        ctx.fillStyle = fill;
+        ctx.beginPath();
+        ctx.moveTo(e.x, e.y - e.radius);
+        ctx.lineTo(e.x + e.radius * 0.7, e.y);
+        ctx.lineTo(e.x, e.y + e.radius);
+        ctx.lineTo(e.x - e.radius * 0.7, e.y);
+        ctx.closePath();
+        ctx.fill();
+      } else if (e.shape === 'pentagon') {
+        renderPolygon(e.x, e.y, e.radius, 5, fill);
       }
-    } else if (e.shape === 'diamond') {
-      ctx.fillStyle = fill;
+    }
+
+    // Slow field visual (deprecated package)
+    if (e.slowRadius > 0) {
+      ctx.globalAlpha = 0.08;
+      ctx.fillStyle = e.color;
       ctx.beginPath();
-      ctx.moveTo(e.x, e.y - e.radius);
-      ctx.lineTo(e.x + e.radius * 0.7, e.y);
-      ctx.lineTo(e.x, e.y + e.radius);
-      ctx.lineTo(e.x - e.radius * 0.7, e.y);
-      ctx.closePath();
+      ctx.arc(e.x, e.y, e.slowRadius, 0, Math.PI * 2);
       ctx.fill();
-    } else if (e.shape === 'pentagon') {
-      renderPolygon(e.x, e.y, e.radius, 5, fill);
-      // Slow field visual
-      if (e.slowRadius > 0) {
-        ctx.globalAlpha = 0.08;
-        ctx.fillStyle = e.color;
+      ctx.globalAlpha = 0.2;
+      ctx.strokeStyle = e.color;
+      ctx.lineWidth = 1;
+      ctx.setLineDash([4, 4]);
+      ctx.stroke();
+      ctx.setLineDash([]);
+      ctx.globalAlpha = 1;
+    }
+
+    // Regen particles (legacy code)
+    if (e.regenRate > 0 && Math.random() < 0.1) {
+      ctx.globalAlpha = 0.5;
+      ctx.fillStyle = '#3fb950';
+      ctx.beginPath();
+      ctx.arc(
+        e.x + (Math.random() - 0.5) * e.radius * 2,
+        e.y + (Math.random() - 0.5) * e.radius * 2,
+        2, 0, Math.PI * 2
+      );
+      ctx.fill();
+      ctx.globalAlpha = 1;
+    }
+
+    // Boss-specific effects (immune shield, enrage glow)
+    if (e.isBoss && spriteDrawn) {
+      const def = CONFIG.BOSS_TYPES[e.type];
+      if (e.isClone) ctx.globalAlpha = 0.55;
+      // Immune shield (blockchain)
+      if (e.immune) {
+        const pulse = Math.sin(game.elapsed * 3) * 0.15 + 0.35;
+        ctx.globalAlpha = pulse;
+        ctx.strokeStyle = '#627eea';
+        ctx.lineWidth = 4;
         ctx.beginPath();
-        ctx.arc(e.x, e.y, e.slowRadius, 0, Math.PI * 2);
-        ctx.fill();
-        ctx.globalAlpha = 0.2;
-        ctx.strokeStyle = e.color;
-        ctx.lineWidth = 1;
-        ctx.setLineDash([4, 4]);
+        ctx.arc(e.x, e.y, e.radius + 10, 0, Math.PI * 2);
         ctx.stroke();
-        ctx.setLineDash([]);
+        ctx.globalAlpha = pulse * 0.3;
+        ctx.fillStyle = '#627eea';
+        ctx.beginPath();
+        ctx.arc(e.x, e.y, e.radius + 8, 0, Math.PI * 2);
+        ctx.fill();
         ctx.globalAlpha = 1;
       }
+      // Enrage glow
+      if (def && def.enrageThreshold && e.hp / e.maxHp < def.enrageThreshold) {
+        ctx.globalAlpha = 0.3 + Math.sin(game.elapsed * 8) * 0.2;
+        ctx.strokeStyle = '#f85149';
+        ctx.lineWidth = 3;
+        ctx.beginPath();
+        ctx.arc(e.x, e.y, e.radius + 6, 0, Math.PI * 2);
+        ctx.stroke();
+        ctx.globalAlpha = 1;
+      }
+      if (e.isClone) ctx.globalAlpha = 1;
     }
 
     // Elite glow
@@ -688,6 +757,7 @@ function tryStackOverflowClone(boss) {
     isBoss: true,
     isClone: true,
     immune: false,
+    _animTimer: 0,
     slowTimer: 0, slowFactor: 1,
     frozen: false, frozenTimer: 0,
     regenRate: 0, spawnOnDeath: 0,
@@ -885,6 +955,7 @@ function handleEnemyDeath(e) {
         hitFlash: 0,
         damaged: false,
         isElite: false, isBoss: false,
+        _animTimer: Math.random() * 2,
         slowTimer: 0, slowFactor: 1,
         frozen: false, frozenTimer: 0,
         regenRate: 0, spawnOnDeath: 0,

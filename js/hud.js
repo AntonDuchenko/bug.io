@@ -268,6 +268,7 @@ function restartGame() {
   killCount = 0;
   bossesKilledThisRun = 0;
   rerollsLeft = typeof getRerollsPerGame === 'function' ? getRerollsPerGame() : 0;
+  if (typeof playerAnimTimer !== 'undefined') playerAnimTimer = 0;
   for (const key in killsByType) delete killsByType[key];
   playerIframeTimer = 0;
   playerHitFlash = 0;
