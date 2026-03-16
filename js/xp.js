@@ -397,13 +397,22 @@ function getRandomUpgrades(count) {
   return getNormalUpgrades(count);
 }
 
+function getActiveSkillCount() {
+  return Object.keys(activeSkills).length;
+}
+
 function getNormalUpgrades(count) {
+  const skillSlotsFull = getActiveSkillCount() >= CONFIG.MAX_SKILLS;
+
   const available = UPGRADE_POOL.filter(u => {
     const lvl = getUpgradeLevel(u.id);
-    return lvl < u.maxLevel;
+    if (lvl >= u.maxLevel) return false;
+    // Don't offer new skills if slots are full
+    if (u.type === 'skill' && lvl === 0 && skillSlotsFull) return false;
+    return true;
   });
 
-  // Prioritize offering new skills the player doesn't have yet
+  // Prioritize offering new skills the player doesn't have yet (if slots available)
   const newSkills = available.filter(u => u.type === 'skill' && getUpgradeLevel(u.id) === 0);
   const others = available.filter(u => !(u.type === 'skill' && getUpgradeLevel(u.id) === 0));
 

@@ -141,6 +141,7 @@ const CONFIG = {
   // Upgrade pool
   UPGRADE_CHOICES: 3,
   MAX_SKILL_LEVEL: 5,
+  MAX_SKILLS: 3,            // max weapon slots
 
   // Elites & Boss
   ELITE_TYPES: {
