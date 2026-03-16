@@ -171,25 +171,33 @@ function renderBackground() {
   ctx.save();
   ctx.translate(-camera.x, -camera.y);
 
-  ctx.strokeStyle = CONFIG.GRID;
-  ctx.lineWidth = 1;
+  // Try to render tiled location background
+  const locId = typeof activeLocation !== 'undefined' ? activeLocation : 'localhost';
+  const pattern = typeof getLocationBgPattern === 'function' ? getLocationBgPattern(locId) : null;
 
-  const gridSize = CONFIG.GRID_SIZE;
-  const startX = Math.floor(camera.x / gridSize) * gridSize;
-  const startY = Math.floor(camera.y / gridSize) * gridSize;
+  if (pattern) {
+    ctx.fillStyle = pattern;
+    ctx.fillRect(0, 0, CONFIG.MAP_WIDTH, CONFIG.MAP_HEIGHT);
+  } else {
+    // Fallback: grid
+    ctx.strokeStyle = CONFIG.GRID;
+    ctx.lineWidth = 1;
+    const gridSize = CONFIG.GRID_SIZE;
+    const startX = Math.floor(camera.x / gridSize) * gridSize;
+    const startY = Math.floor(camera.y / gridSize) * gridSize;
 
-  for (let x = startX; x < camera.x + canvasWidth + gridSize; x += gridSize) {
-    ctx.beginPath();
-    ctx.moveTo(x, camera.y);
-    ctx.lineTo(x, camera.y + canvasHeight);
-    ctx.stroke();
-  }
-
-  for (let y = startY; y < camera.y + canvasHeight + gridSize; y += gridSize) {
-    ctx.beginPath();
-    ctx.moveTo(camera.x, y);
-    ctx.lineTo(camera.x + canvasWidth, y);
-    ctx.stroke();
+    for (let x = startX; x < camera.x + canvasWidth + gridSize; x += gridSize) {
+      ctx.beginPath();
+      ctx.moveTo(x, camera.y);
+      ctx.lineTo(x, camera.y + canvasHeight);
+      ctx.stroke();
+    }
+    for (let y = startY; y < camera.y + canvasHeight + gridSize; y += gridSize) {
+      ctx.beginPath();
+      ctx.moveTo(camera.x, y);
+      ctx.lineTo(camera.x + canvasWidth, y);
+      ctx.stroke();
+    }
   }
 
   ctx.strokeStyle = CONFIG.BORDER;

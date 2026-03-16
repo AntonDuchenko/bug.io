@@ -77,10 +77,13 @@ function renderProjectiles() {
 
     // Main projectile
     ctx.globalAlpha = 1;
-    ctx.fillStyle = color;
-    ctx.beginPath();
-    ctx.arc(p.x, p.y, p.radius, 0, Math.PI * 2);
-    ctx.fill();
+    const angle = Math.atan2(p.vy, p.vx);
+    if (!(typeof drawProjectileSprite === 'function' && p.skillId && drawProjectileSprite(p.skillId, p.x, p.y, p.radius, angle))) {
+      ctx.fillStyle = color;
+      ctx.beginPath();
+      ctx.arc(p.x, p.y, p.radius, 0, Math.PI * 2);
+      ctx.fill();
+    }
   }
 
   ctx.globalAlpha = 1;

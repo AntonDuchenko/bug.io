@@ -61,6 +61,144 @@ async function loadAllSprites() {
   spritesLoaded = true;
 }
 
+// --- Location background textures ---
+const LOCATION_BG_MAP = {
+  localhost:          'bg_localhost',
+  staging:            'bg_staging',
+  legacy_codebase:    'bg_legacy',
+  dark_mode:          'bg_darkmode',
+  cloud:              'bg_cloud',
+  incident:           'bg_incident',
+  hackathon:          'bg_hackathon',
+  infinite_loop:      'bg_infinite_loop',
+  production_server:  'bg_production',
+};
+
+const LOCATION_PROPS_MAP = {
+  localhost:          'props_localhost',
+  staging:            'props_staging',
+  legacy_codebase:    'props_legacy',
+  dark_mode:          'props_darkmode',
+  cloud:              'props_cloud',
+  incident:           'props_incident',
+  hackathon:          'props_hackathon',
+  infinite_loop:      'props_loop',
+  production_server:  'props_production',
+};
+
+// Projectile sprite map: skillId -> file
+const PROJECTILE_SPRITE_MAP = {
+  console_log: 'proj_console',
+  git_push:    'proj_gitpush',
+  exploit:     'proj_exploit',
+};
+
+// Background pattern caches (created from loaded images)
+const bgPatterns = {};
+// Props: array of {x, y, propIdx} per location
+let scatteredProps = [];
+let propsLocationId = null;
+
+async function loadAllSprites() {
+  const promises = [];
+  const basePath = 'assets/sprites/';
+
+  // Character sprites
+  for (const [type, def] of Object.entries(SPRITE_MAP)) {
+    const anims = ['idle', 'walk', 'attack'];
+    for (const anim of anims) {
+      const key = type + '_' + anim;
+      const src = basePath + def.prefix + '_' + anim + '.png';
+      spritesTotal++;
+      promises.push(loadSprite(key, src));
+    }
+  }
+
+  // Location backgrounds
+  for (const [locId, file] of Object.entries(LOCATION_BG_MAP)) {
+    spritesTotal++;
+    promises.push(loadSprite('bg_' + locId, basePath + file + '.png'));
+  }
+
+  // Location props
+  for (const [locId, file] of Object.entries(LOCATION_PROPS_MAP)) {
+    spritesTotal++;
+    promises.push(loadSprite('props_' + locId, basePath + file + '.png'));
+  }
+
+  // Projectile sprites
+  for (const [skillId, file] of Object.entries(PROJECTILE_SPRITE_MAP)) {
+    spritesTotal++;
+    promises.push(loadSprite('proj_' + skillId, basePath + file + '.png'));
+  }
+
+  await Promise.all(promises);
+  spritesLoaded = true;
+}
+
+// Create tileable pattern from a loaded background image
+function getLocationBgPattern(locationId) {
+  if (bgPatterns[locationId]) return bgPatterns[locationId];
+  const img = spriteImages['bg_' + locationId];
+  if (!img) return null;
+  const pat = ctx.createPattern(img, 'repeat');
+  if (pat) bgPatterns[locationId] = pat;
+  return pat;
+}
+
+// Generate scattered props for the current location
+function generateScatteredProps(locationId) {
+  if (propsLocationId === locationId) return;
+  propsLocationId = locationId;
+  scatteredProps = [];
+
+  const img = spriteImages['props_' + locationId];
+  if (!img) return;
+
+  // Scatter ~60 props across the map
+  const count = 60;
+  const margin = 100;
+  for (let i = 0; i < count; i++) {
+    scatteredProps.push({
+      x: margin + Math.random() * (CONFIG.MAP_WIDTH - margin * 2),
+      y: margin + Math.random() * (CONFIG.MAP_HEIGHT - margin * 2),
+      propIdx: Math.floor(Math.random() * 4), // 4 props per spritesheet
+      scale: 0.6 + Math.random() * 0.4,
+    });
+  }
+}
+
+// Draw a single prop from the props spritesheet
+function drawProp(locationId, x, y, propIdx, scale) {
+  const img = spriteImages['props_' + locationId];
+  if (!img) return;
+
+  const propW = 64;
+  const propH = 64;
+  const sx = propIdx * propW;
+  const drawSize = propW * (scale || 1);
+
+  ctx.drawImage(
+    img,
+    sx, 0, propW, propH,
+    x - drawSize / 2, y - drawSize / 2, drawSize, drawSize
+  );
+}
+
+// Draw a projectile sprite (returns true if drawn)
+function drawProjectileSprite(skillId, x, y, radius, angle) {
+  const img = spriteImages['proj_' + skillId];
+  if (!img) return false;
+
+  const drawSize = radius * 3;
+  ctx.save();
+  ctx.translate(x, y);
+  if (angle !== undefined) ctx.rotate(angle);
+  ctx.drawImage(img, -drawSize / 2, -drawSize / 2, drawSize, drawSize);
+  ctx.restore();
+  return true;
+}
+
 // Start loading immediately
 loadAllSprites();
 

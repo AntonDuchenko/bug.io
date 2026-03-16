@@ -74,6 +74,7 @@ const SKILL_DEFS = {
           piercing: false,
           maxDistance: p.maxDistance, traveled: 0,
           trail: [], color: CONFIG.SKILL_CONSOLE_LOG.color,
+          skillId: 'console_log',
         });
       }
     },
@@ -129,6 +130,7 @@ const SKILL_DEFS = {
           piercing: p.piercing,
           maxDistance: p.maxDistance, traveled: 0,
           trail: [], color: CONFIG.SKILL_GIT_PUSH.color,
+          skillId: 'git_push',
         });
       }
     },
@@ -458,6 +460,7 @@ const SKILL_DEFS = {
             piercing: false,
             maxDistance: b.projMaxDist, traveled: 0,
             trail: [], color: b.color,
+            skillId: 'exploit',
           });
         }
       } else {
@@ -560,6 +563,7 @@ const EVOLVED_FIRE = {
         piercing: false,
         maxDistance: p.maxDistance, traveled: 0,
         trail: [], color: CONFIG.EVOLUTIONS.breakpoint.color,
+        skillId: 'console_log',
         onHit: 'freeze', freezeDuration: CONFIG.EVOLUTIONS.breakpoint.freezeDuration,
       });
     }
@@ -592,6 +596,7 @@ const EVOLVED_FIRE = {
         piercing: p.piercing,
         maxDistance: p.maxDistance, traveled: 0,
         trail: [], color: CONFIG.EVOLUTIONS.auto_deploy.color,
+        skillId: 'git_push',
         homing: true,
       });
     }

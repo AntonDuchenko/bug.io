@@ -1234,6 +1234,13 @@ function initLocation(locationId) {
   activeLocation = locationId || 'localhost';
   resetLocationState();
 
+  // Reset prop scattering so it regenerates for new location
+  if (typeof propsLocationId !== 'undefined') propsLocationId = null;
+  // Clear bg pattern cache (location changed)
+  if (typeof bgPatterns !== 'undefined') {
+    for (const k in bgPatterns) delete bgPatterns[k];
+  }
+
   if (activeLocation === 'hackathon') {
     initHackathonCompanion();
   }

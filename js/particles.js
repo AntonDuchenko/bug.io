@@ -159,22 +159,47 @@ function updateMovingBg(dt) {
 }
 
 function renderMovingBgPattern() {
-  // Subtle floating dots for sense of motion
-  ctx.save();
-  const spacing = 80;
-  const dotR = 1.2;
-  ctx.fillStyle = '#1a2030';
+  // Render scattered props if available
+  const locId = typeof activeLocation !== 'undefined' ? activeLocation : 'localhost';
 
-  const offsetX = bgScrollX % spacing;
-  const offsetY = bgScrollY % spacing;
-
-  for (let x = -spacing + offsetX; x < canvasWidth + spacing; x += spacing) {
-    for (let y = -spacing + offsetY; y < canvasHeight + spacing; y += spacing) {
-      ctx.beginPath();
-      ctx.arc(x, y, dotR, 0, Math.PI * 2);
-      ctx.fill();
-    }
+  if (typeof generateScatteredProps === 'function') {
+    generateScatteredProps(locId);
   }
 
-  ctx.restore();
+  if (typeof scatteredProps !== 'undefined' && scatteredProps.length > 0) {
+    ctx.save();
+    ctx.translate(-camera.x, -camera.y);
+    ctx.globalAlpha = 0.7;
+
+    for (const prop of scatteredProps) {
+      // Cull off-screen props
+      if (prop.x < camera.x - 64 || prop.x > camera.x + canvasWidth + 64 ||
+          prop.y < camera.y - 64 || prop.y > camera.y + canvasHeight + 64) continue;
+
+      if (typeof drawProp === 'function') {
+        drawProp(locId, prop.x, prop.y, prop.propIdx, prop.scale);
+      }
+    }
+
+    ctx.globalAlpha = 1;
+    ctx.restore();
+  } else {
+    // Fallback: subtle floating dots
+    ctx.save();
+    const spacing = 80;
+    const dotR = 1.2;
+    ctx.fillStyle = '#1a2030';
+
+    const offsetX = bgScrollX % spacing;
+    const offsetY = bgScrollY % spacing;
+
+    for (let x = -spacing + offsetX; x < canvasWidth + spacing; x += spacing) {
+      for (let y = -spacing + offsetY; y < canvasHeight + spacing; y += spacing) {
+        ctx.beginPath();
+        ctx.arc(x, y, dotR, 0, Math.PI * 2);
+        ctx.fill();
+      }
+    }
+    ctx.restore();
+  }
 }
